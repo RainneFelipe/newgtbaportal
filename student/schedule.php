@@ -1,0 +1,936 @@
+<?php
+require_once '../includes/auth_check.php';
+
+// Check if user is a student
+if (!checkRole('student')) {
+    header('Location: ../index.php');
+    exit();
+}
+
+require_once '../config/database.php';
+
+$page_title = 'Class Schedule - GTBA Portal';
+$base_url = '../';
+
+try {
+    $database = new Database();
+    $db = $database->connect();
+    
+    // Get student's current section and schedule
+    $query = "SELECT cs.*, 
+                     CASE 
+                         WHEN cs.activity_name IS NOT NULL THEN cs.activity_name
+                         WHEN cs.subject_id IS NOT NULL THEN s.subject_name
+                         ELSE 'Unknown Activity'
+                     END as activity_display,
+                     CASE 
+                         WHEN cs.activity_name IS NOT NULL THEN 'activity'
+                         WHEN cs.subject_id IS NOT NULL THEN 'subject'
+                         ELSE 'unknown'
+                     END as schedule_type,
+                     s.subject_name, 
+                     CASE 
+                         WHEN cs.teacher_id IS NOT NULL THEN CONCAT(t.first_name, ' ', t.last_name)
+                         ELSE NULL
+                     END as teacher_name,
+                     sec.section_name, gl.grade_name
+              FROM students st
+              LEFT JOIN sections sec ON st.current_section_id = sec.id
+              LEFT JOIN grade_levels gl ON st.current_grade_level_id = gl.id
+              LEFT JOIN class_schedules cs ON sec.id = cs.section_id AND st.current_school_year_id = cs.school_year_id
+              LEFT JOIN subjects s ON cs.subject_id = s.id
+              LEFT JOIN teachers t ON cs.teacher_id = t.user_id
+              WHERE st.user_id = :user_id AND cs.is_active = 1
+              ORDER BY 
+                CASE cs.day_of_week 
+                    WHEN 'Monday' THEN 1
+                    WHEN 'Tuesday' THEN 2
+                    WHEN 'Wednesday' THEN 3
+                    WHEN 'Thursday' THEN 4
+                    WHEN 'Friday' THEN 5
+                    WHEN 'Saturday' THEN 6
+                END,
+                cs.start_time";
+    
+    $stmt = $db->prepare($query);
+    $stmt->bindParam(':user_id', $_SESSION['user_id']);
+    $stmt->execute();
+    
+    $schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Get student info for section details
+    $query = "SELECT s.*, sec.section_name, gl.grade_name, sy.year_label
+              FROM students s
+              LEFT JOIN sections sec ON s.current_section_id = sec.id
+              LEFT JOIN grade_levels gl ON s.current_grade_level_id = gl.id
+              LEFT JOIN school_years sy ON s.current_school_year_id = sy.id
+              WHERE s.user_id = :user_id";
+    
+    $stmt = $db->prepare($query);
+    $stmt->bindParam(':user_id', $_SESSION['user_id']);
+    $stmt->execute();
+    
+    $student_info = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+} catch (Exception $e) {
+    $error_message = "Unable to load schedule information.";
+    error_log("Student schedule error: " . $e->getMessage());
+}
+
+// Group schedules by day
+$schedule_by_day = [];
+if (!empty($schedules)) {
+    foreach ($schedules as $schedule) {
+        if ($schedule['day_of_week']) {
+            $schedule_by_day[$schedule['day_of_week']][] = $schedule;
+        }
+    }
+}
+
+$days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+ob_start();
+?>
+
+<div class="schedule-page">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="page-title" style="color: var(--white);">
+                    <i class="fas fa-calendar-week"></i>
+                    My Class Schedule
+                </h1>
+                <p class="page-subtitle" style="color: var(--white);">Weekly timetable for all subjects and activities</p>
+            </div>
+            <div class="header-right">
+                <?php if (!empty($schedules)): ?>
+                <div class="schedule-overview">
+                    <div class="overview-stat">
+                        <span class="stat-number"><?php echo count(array_unique(array_column($schedules, 'day_of_week'))); ?></span>
+                        <span class="stat-label">Active Days</span>
+                    </div>
+                    <div class="overview-stat">
+                        <span class="stat-number"><?php echo count($schedules); ?></span>
+                        <span class="stat-label">Total Classes</span>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <?php if ($student_info && $student_info['section_name']): ?>
+        <div class="student-info">
+            <div class="info-item">
+                <i class="fas fa-users"></i>
+                <span><?php echo htmlspecialchars($student_info['section_name']); ?></span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-graduation-cap"></i>
+                <span><?php echo htmlspecialchars($student_info['grade_name']); ?></span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span><?php echo htmlspecialchars($student_info['year_label']); ?></span>
+            </div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Error/Warning Messages -->
+    <?php if (isset($error_message)): ?>
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span><?php echo $error_message; ?></span>
+        </div>
+    <?php elseif (!$student_info || !$student_info['current_section_id']): ?>
+        <div class="alert alert-warning">
+            <i class="fas fa-info-circle"></i>
+            <span>You are not yet assigned to a section. Please contact the registrar's office.</span>
+        </div>
+    <?php elseif (empty($schedules)): ?>
+        <div class="alert alert-info">
+            <i class="fas fa-calendar-times"></i>
+            <span>No class schedule has been set up yet for your section. Please check back later.</span>
+        </div>
+    <?php else: ?>
+
+    <!-- Weekly Schedule Grid -->
+    <div class="schedule-container">
+        <div class="schedule-header">
+            <h2>Weekly Schedule</h2>
+            <div class="schedule-controls">
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="color-box subject"></div>
+                        <span>Subjects</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box activity"></div>
+                        <span>Activities</span>
+                    </div>
+                </div>
+                <button onclick="window.print()" class="print-btn">
+                    <i class="fas fa-print"></i>
+                    Print
+                </button>
+            </div>
+        </div>
+
+        <div class="weekly-grid">
+            <!-- Time Column -->
+            <div class="time-column">
+                <div class="time-header">Time</div>
+                <?php
+                // Generate time slots from 7:00 AM to 6:00 PM
+                $start_hour = 7;
+                $end_hour = 18;
+                for ($hour = $start_hour; $hour <= $end_hour; $hour++) {
+                    $time_12 = ($hour > 12) ? ($hour - 12) . ':00 PM' : (($hour == 12) ? '12:00 PM' : $hour . ':00 AM');
+                    echo '<div class="time-slot">' . $time_12 . '</div>';
+                }
+                ?>
+            </div>
+
+            <!-- Days Columns -->
+            <?php foreach ($days as $day): ?>
+            <div class="day-column">
+                <div class="day-header">
+                    <span class="day-name"><?php echo $day; ?></span>
+                </div>
+                
+                <div class="day-content">
+                    <?php if (isset($schedule_by_day[$day]) && !empty($schedule_by_day[$day])): ?>
+                        <?php foreach ($schedule_by_day[$day] as $class): ?>
+                            <?php
+                            $start_time = strtotime($class['start_time']);
+                            $end_time = strtotime($class['end_time']);
+                            $start_hour = (int)date('H', $start_time);
+                            $start_minute = (int)date('i', $start_time);
+                            $duration_hours = ($end_time - $start_time) / 3600;
+                            
+                            // Calculate position (starting from 7 AM = 0)
+                            $top_position = (($start_hour - 7) + ($start_minute / 60)) * 60; // 60px per hour
+                            $height = $duration_hours * 60; // 60px per hour
+                            
+                            $schedule_type = $class['schedule_type'] ?? 'unknown';
+                            ?>
+                            <div class="class-block <?php echo $schedule_type; ?>" 
+                                 style="top: <?php echo $top_position; ?>px; height: <?php echo max($height, 50); ?>px;"
+                                 title="<?php echo htmlspecialchars($class['activity_display'] ?? 'Unknown'); ?>">
+                                <div class="class-time">
+                                    <?php echo date('g:i A', $start_time); ?> - <?php echo date('g:i A', $end_time); ?>
+                                </div>
+                                <div class="class-title">
+                                    <?php echo htmlspecialchars($class['activity_display'] ?? 'Unknown'); ?>
+                                </div>
+                                
+                                
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="no-classes">
+                            <i class="fas fa-moon"></i>
+                            <span>No classes</span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <!-- Schedule Summary -->
+    <?php
+    $total_subjects = count(array_unique(array_column(array_filter($schedules, function($s) { return $s['schedule_type'] === 'subject'; }), 'subject_id')));
+    $total_activities = count(array_filter($schedules, function($s) { return $s['schedule_type'] === 'activity'; }));
+    $total_hours = 0;
+    foreach ($schedules as $schedule) {
+        if ($schedule['start_time'] && $schedule['end_time']) {
+            $start = new DateTime($schedule['start_time']);
+            $end = new DateTime($schedule['end_time']);
+            $diff = $start->diff($end);
+            $total_hours += $diff->h + ($diff->i / 60);
+        }
+    }
+    ?>
+
+    <div class="schedule-summary">
+        <h3>Schedule Summary</h3>
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="summary-icon subjects">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="summary-info">
+                    <span class="summary-number"><?php echo $total_subjects; ?></span>
+                    <span class="summary-label">Subjects</span>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-icon activities">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="summary-info">
+                    <span class="summary-number"><?php echo $total_activities; ?></span>
+                    <span class="summary-label">Activities</span>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-icon hours">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="summary-info">
+                    <span class="summary-number"><?php echo number_format($total_hours, 1); ?></span>
+                    <span class="summary-label">Hours/Week</span>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="summary-icon days">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div class="summary-info">
+                    <span class="summary-number"><?php echo count(array_unique(array_column($schedules, 'day_of_week'))); ?></span>
+                    <span class="summary-label">Active Days</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <?php endif; ?>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="dashboard.php" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<style>
+:root {
+    --primary-blue: #2e86ab;
+    --dark-blue: #1a5f7a;
+    --light-blue: #e8f4f8;
+    --success-green: #27ae60;
+    --warning-orange: #f39c12;
+    --error-red: #e74c3c;
+    --gray: #6c757d;
+    --light-gray: #f8f9fa;
+    --border-gray: #dee2e6;
+    --white: #ffffff;
+    --black: #2c3e50;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header Styles */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+    color: var(--white);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--white);
+}
+
+.page-title i {
+    font-size: 2rem;
+    color: var(--white);
+}
+
+.page-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+    color: var(--white);
+}
+
+.schedule-overview {
+    display: flex;
+    gap: 2rem;
+}
+
+.overview-stat {
+    text-align: center;
+}
+
+.stat-number {
+    display: block;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--white);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    color: var(--white);
+}
+
+.student-info {
+    display: flex;
+    gap: 2rem;
+    padding: 1rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--white);
+}
+
+.info-item i {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    color: var(--white);
+}
+
+/* Alert Styles */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    font-weight: 500;
+}
+
+.alert-error {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--error-red);
+    border: 1px solid rgba(231, 76, 60, 0.2);
+}
+
+.alert-warning {
+    background: rgba(243, 156, 18, 0.1);
+    color: var(--warning-orange);
+    border: 1px solid rgba(243, 156, 18, 0.2);
+}
+
+.alert-info {
+    background: rgba(46, 134, 171, 0.1);
+    color: var(--primary-blue);
+    border: 1px solid rgba(46, 134, 171, 0.2);
+}
+
+/* Schedule Container */
+.schedule-container {
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background: var(--light-gray);
+    border-bottom: 2px solid var(--border-gray);
+}
+
+.schedule-header h2 {
+    margin: 0;
+    color: var(--black);
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.schedule-controls {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.legend {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--gray);
+}
+
+.color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.color-box.subject {
+    background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+}
+
+.color-box.activity {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.print-btn {
+    background: var(--primary-blue);
+    color: var(--white);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background 0.3s ease;
+}
+
+.print-btn:hover {
+    background: var(--dark-blue);
+}
+
+/* Weekly Grid */
+.weekly-grid {
+    display: grid;
+    grid-template-columns: 100px repeat(6, 1fr);
+    height: 660px; /* 11 hours * 60px */
+    position: relative;
+    gap: 0;
+    border: 1px solid var(--border-gray);
+}
+
+.time-column {
+    background: var(--light-gray);
+    border-right: 2px solid var(--border-gray);
+}
+
+.time-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--black);
+    background: var(--white);
+    border-bottom: 1px solid var(--border-gray);
+}
+
+.time-slot {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: var(--gray);
+    border-bottom: 1px solid var(--border-gray);
+    background: var(--light-gray);
+}
+
+.day-column {
+    position: relative;
+    border-right: 1px solid var(--border-gray);
+}
+
+.day-column:last-child {
+    border-right: none;
+}
+
+.day-header {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-blue);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.day-content {
+    position: relative;
+    height: 600px; /* 10 hours * 60px (7 AM to 5 PM) */
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 59px,
+            var(--border-gray) 59px,
+            var(--border-gray) 60px
+        );
+    overflow: visible;
+}
+
+.class-block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 8px;
+    padding: 6px 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    overflow: visible;
+    border-left: 4px solid;
+    background: var(--white);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    min-height: 50px;
+    z-index: 1;
+}
+
+.class-block:hover {
+    transform: translateX(2px) scale(1.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    border-radius: 10px;
+}
+
+.class-block.subject {
+    border-left-color: var(--primary-blue);
+    background: linear-gradient(135deg, #e3f2fd 0%, var(--white) 100%);
+}
+
+.class-block.activity {
+    border-left-color: #9b59b6;
+    background: linear-gradient(135deg, #f3e5f5 0%, var(--white) 100%);
+}
+
+.class-time {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--gray);
+    margin-bottom: 4px;
+}
+
+.class-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1.1;
+    margin-bottom: 3px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-height: none;
+}
+
+.class-teacher, .class-room {
+    font-size: 0.65rem;
+    color: var(--gray);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 1px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.class-teacher i, .class-room i {
+    font-size: 0.65rem;
+}
+
+.no-classes {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--gray);
+    opacity: 0.6;
+}
+
+.no-classes i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.no-classes span {
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* Schedule Summary */
+.schedule-summary {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.schedule-summary h3 {
+    margin: 0 0 1.5rem 0;
+    color: var(--black);
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--light-gray);
+    border-radius: 12px;
+    transition: transform 0.2s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+}
+
+.summary-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 1.2rem;
+}
+
+.summary-icon.subjects {
+    background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+}
+
+.summary-icon.activities {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+}
+
+.summary-icon.hours {
+    background: linear-gradient(135deg, var(--success-green), #229954);
+}
+
+.summary-icon.days {
+    background: linear-gradient(135deg, var(--warning-orange), #e67e22);
+}
+
+.summary-number {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--black);
+    line-height: 1;
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    color: var(--gray);
+    margin-top: 0.25rem;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background: var(--gray);
+    color: var(--white);
+}
+
+.btn-secondary:hover {
+    background: var(--black);
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .weekly-grid {
+        grid-template-columns: 80px repeat(6, 1fr);
+    }
+    
+    .time-slot {
+        font-size: 0.75rem;
+        padding: 0 0.25rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .student-info {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .schedule-controls {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .weekly-grid {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .schedule-page {
+        padding: 0.5rem;
+    }
+    
+    .page-header {
+        padding: 1.5rem;
+    }
+    
+    .page-title {
+        font-size: 1.8rem;
+    }
+    
+    .weekly-grid {
+        grid-template-columns: 60px repeat(6, 1fr);
+        height: 480px;
+        font-size: 0.75rem;
+    }
+    
+    .day-content {
+        height: 420px;
+    }
+    
+    .time-slot, .day-header {
+        height: 40px;
+        font-size: 0.7rem;
+    }
+    
+    .class-block {
+        padding: 3px 4px;
+        font-size: 0.7rem;
+        min-height: 35px;
+        overflow: visible;
+    }
+    
+    .class-title {
+        font-size: 0.7rem;
+        line-height: 1.0;
+        margin-bottom: 2px;
+    }
+    
+    .class-teacher, .class-room {
+        font-size: 0.6rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .weekly-grid {
+        grid-template-columns: 50px repeat(3, 1fr);
+        overflow-x: auto;
+    }
+    
+    .student-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .page-header,
+    .action-buttons,
+    .print-btn {
+        display: none !important;
+    }
+    
+    .schedule-container {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+    
+    .weekly-grid {
+        break-inside: avoid;
+    }
+    
+    .class-block {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+</style>
+
+<?php
+$content = ob_get_clean();
+include '../includes/header.php';
+echo $content;
+include '../includes/footer.php';
+?>
