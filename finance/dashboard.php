@@ -460,6 +460,13 @@ ob_start();
             <span style="color: var(--dark-blue); font-weight: 600;">Manage Tuition Fees</span>
         </a>
         
+        <a href="payment_terms.php" style="display: block; background: var(--light-blue); padding: 1.5rem; border-radius: 10px; text-decoration: none; text-align: center; transition: all 0.3s ease;" 
+           onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';" 
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+            <i class="fas fa-calendar-alt" style="font-size: 2rem; color: var(--primary-blue); margin-bottom: 0.5rem; display: block;"></i>
+            <span style="color: var(--dark-blue); font-weight: 600;">Payment Terms</span>
+        </a>
+        
         <a href="payments.php" style="display: block; background: var(--light-blue); padding: 1.5rem; border-radius: 10px; text-decoration: none; text-align: center; transition: all 0.3s ease;" 
            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)';" 
            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">

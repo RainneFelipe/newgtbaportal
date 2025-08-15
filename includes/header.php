@@ -158,16 +158,31 @@ if (isset($_SESSION['user_id'])) {
                             <span>Dashboard</span>
                         </a>
                     </li>
+                    <li class="menu-section">
+                        <span class="section-title">Financial Management</span>
+                    </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>finance/tuition.php" class="menu-link">
+                        <a href="<?php echo $base_url ?? '../'; ?>finance/tuition.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'tuition.php') ? 'active' : ''; ?>">
                             <i class="fas fa-money-bill"></i>
                             <span>Tuition Management</span>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>finance/payments.php" class="menu-link">
+                        <a href="<?php echo $base_url ?? '../'; ?>finance/payment_terms.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'payment_terms.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Payment Terms</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>finance/payments.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'payments.php') ? 'active' : ''; ?>">
                             <i class="fas fa-credit-card"></i>
                             <span>Payment Methods</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>finance/reports.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'reports.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Financial Reports</span>
                         </a>
                     </li>
 
