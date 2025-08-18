@@ -54,28 +54,6 @@ ob_start();
 <div class="welcome-section">
     <h1 class="welcome-title">Welcome Back!</h1>
     <p class="welcome-subtitle">Your GTBA Student Portal Dashboard</p>
-    
-    <?php if (isset($student_info) && $student_info): ?>
-        <div class="student-info">
-            <h4>Student Information</h4>
-            <p><strong>Name:</strong> <?php echo htmlspecialchars($student_info['first_name'] . ' ' . ($student_info['middle_name'] ? $student_info['middle_name'] . ' ' : '') . $student_info['last_name']); ?></p>
-            <p><strong>Student ID:</strong> <?php echo htmlspecialchars($student_info['student_id']); ?></p>
-            <p><strong>LRN:</strong> <?php echo htmlspecialchars($student_info['lrn']); ?></p>
-            <?php if ($student_info['grade_name']): ?>
-                <p><strong>Grade Level:</strong> <?php echo htmlspecialchars($student_info['grade_name']); ?></p>
-            <?php endif; ?>
-            <?php if ($student_info['section_name']): ?>
-                <p><strong>Section:</strong> <?php echo htmlspecialchars($student_info['section_name']); ?></p>
-            <?php endif; ?>
-            <?php if ($student_info['year_label']): ?>
-                <p><strong>School Year:</strong> <?php echo htmlspecialchars($student_info['year_label']); ?></p>
-            <?php endif; ?>
-        </div>
-    <?php else: ?>
-        <div class="alert alert-warning">
-            Student information is not yet complete. Please contact the registrar's office.
-        </div>
-    <?php endif; ?>
 </div>
 
 <!-- Recent Announcements -->
@@ -165,7 +143,7 @@ ob_start();
         <div class="card-icon">👤</div>
         <h3 class="card-title">My Profile</h3>
         <p class="card-description">View and update your personal information and contact details.</p>
-        <a href="profile.php" class="card-link">View Profile</a>
+        <a href="../profile/edit.php" class="card-link">Edit Profile</a>
     </div>
 </div>
 
