@@ -63,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_payment'])) {
         $payment_term_id = $_POST['payment_term_id'];
         $payment_type = $_POST['payment_type'];
         $installment_number = $_POST['installment_number'] ?? null;
+        
+        // Ensure installment_number is properly NULL for non-installment payments
+        if ($payment_type !== 'monthly_installment' || empty($installment_number)) {
+            $installment_number = null;
+        }
+        
         $amount_paid = $_POST['amount_paid'];
         $payment_date = $_POST['payment_date'];
         $payment_method = $_POST['payment_method'];
