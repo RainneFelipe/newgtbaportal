@@ -90,6 +90,12 @@ if (isset($_SESSION['user_id'])) {
                         </a>
                     </li>
                     <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>student/payments.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'payments.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-credit-card"></i>
+                            <span>Submit Payment</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>student/section.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'section.php') ? 'active' : ''; ?>">
                             <i class="fas fa-users"></i>
                             <span>My Section</span>
@@ -165,6 +171,12 @@ if (isset($_SESSION['user_id'])) {
                         <a href="<?php echo $base_url ?? '../'; ?>finance/tuition.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'tuition.php') ? 'active' : ''; ?>">
                             <i class="fas fa-money-bill"></i>
                             <span>Tuition Management</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>finance/payment_verification.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'payment_verification.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Payment Verification</span>
                         </a>
                     </li>
                     <li class="menu-item">

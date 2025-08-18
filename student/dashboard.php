@@ -141,6 +141,13 @@ ob_start();
     </div>
     
     <div class="dashboard-card">
+        <div class="card-icon">💳</div>
+        <h3 class="card-title">Submit Payment</h3>
+        <p class="card-description">Submit payment proofs for verification by finance office.</p>
+        <a href="payments.php" class="card-link">Submit Payment</a>
+    </div>
+    
+    <div class="dashboard-card">
         <div class="card-icon">👥</div>
         <h3 class="card-title">My Section</h3>
         <p class="card-description">View information about your class section and classmates.</p>
