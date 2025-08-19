@@ -270,7 +270,7 @@ if (isset($_SESSION['user_id'])) {
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>student/payments.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'payments.php') ? 'active' : ''; ?>">
                             <i class="fas fa-credit-card"></i>
-                            <span>Submit Payment</span>
+                            <span>Submit Payment Proof</span>
                         </a>
                     </li>
                     <li class="menu-item">

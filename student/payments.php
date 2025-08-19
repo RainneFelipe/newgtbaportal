@@ -184,7 +184,7 @@ ob_start();
 ?>
 
 <div class="welcome-section">
-    <h1 class="welcome-title">Payment Submission</h1>
+    <h1 class="welcome-title">Proof of Payment Submission </h1>
     <p class="welcome-subtitle">Submit your payment proof for verification</p>
 </div>
 
@@ -214,7 +214,7 @@ ob_start();
 
 <?php if (!empty($payment_terms)): ?>
     <div style="background: var(--white); border-radius: 15px; padding: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08); margin-bottom: 2rem;">
-        <h3 style="color: var(--dark-blue); margin-bottom: 1.5rem;">💳 Submit Payment</h3>
+        <h3 style="color: var(--dark-blue); margin-bottom: 1.5rem;">💳 Submit Payment Proof</h3>
         
         <form method="POST" enctype="multipart/form-data" style="max-width: 800px;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
