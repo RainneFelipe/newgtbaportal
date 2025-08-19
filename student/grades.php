@@ -16,49 +16,101 @@ try {
     $database = new Database();
     $db = $database->connect();
     
+    // Create variable for user ID to avoid bindParam issues
+    $user_id = $_SESSION['user_id'];
+    
     // Get student information first
-    $student_query = "SELECT st.id as student_id, st.current_grade_level_id, st.current_school_year_id, st.first_name, st.last_name
+    $student_query = "SELECT st.id as student_id, st.current_grade_level_id, st.current_school_year_id, 
+                             st.first_name, st.last_name, gl.grade_name, sy.year_label
                       FROM students st 
-                      WHERE st.user_id = :user_id";
+                      LEFT JOIN grade_levels gl ON st.current_grade_level_id = gl.id
+                      LEFT JOIN school_years sy ON st.current_school_year_id = sy.id
+                      WHERE st.user_id = :user_id AND st.is_active = 1";
     $student_stmt = $db->prepare($student_query);
-    $student_stmt->bindParam(':user_id', $_SESSION['user_id']);
+    $student_stmt->bindParam(':user_id', $user_id);
     $student_stmt->execute();
     $student_info = $student_stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$student_info) {
-        throw new Exception("Student information not found");
+        throw new Exception("Student information not found. Please contact the registrar to ensure your account is properly set up.");
+    }
+    
+    if (!$student_info['current_grade_level_id'] || !$student_info['current_school_year_id']) {
+        throw new Exception("Student grade level or school year not assigned. Please contact the registrar.");
     }
     
     // Get all subjects from curriculum for the student's current grade level and school year
-    $curriculum_query = "SELECT c.*, s.subject_name, s.subject_code, sy.year_label
+    // First try with exact school year match, then fall back to any school year for the grade level
+    $curriculum_query = "SELECT c.*, s.subject_name, s.subject_code, sy.year_label,
+                                c.grade_level_id, c.school_year_id
                          FROM curriculum c
                          JOIN subjects s ON c.subject_id = s.id
                          LEFT JOIN school_years sy ON c.school_year_id = sy.id
                          WHERE c.grade_level_id = :grade_level_id 
-                         AND c.school_year_id = :school_year_id
+                         AND (c.school_year_id = :school_year_id OR c.school_year_id IN (
+                             SELECT id FROM school_years WHERE is_active = 1 OR is_current = 1
+                         ))
                          AND s.is_active = 1
-                         ORDER BY c.order_sequence ASC, s.subject_name ASC";
+                         ORDER BY c.school_year_id DESC, c.order_sequence ASC, s.subject_name ASC";
     
     $curriculum_stmt = $db->prepare($curriculum_query);
-    $curriculum_stmt->bindParam(':grade_level_id', $student_info['current_grade_level_id']);
-    $curriculum_stmt->bindParam(':school_year_id', $student_info['current_school_year_id']);
+    $grade_level_id = $student_info['current_grade_level_id'];
+    $school_year_id = $student_info['current_school_year_id'];
+    $curriculum_stmt->bindParam(':grade_level_id', $grade_level_id);
+    $curriculum_stmt->bindParam(':school_year_id', $school_year_id);
     $curriculum_stmt->execute();
     
     $curriculum_subjects = $curriculum_stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get existing grades for these subjects
-    $grades_query = "SELECT sg.*, t.first_name as teacher_fname, t.last_name as teacher_lname
+    // Debug logging
+    error_log("Student curriculum debug - Grade Level ID: $grade_level_id, School Year ID: $school_year_id");
+    error_log("Student curriculum debug - Found " . count($curriculum_subjects) . " subjects");
+    
+    // If no subjects found for current school year, try to get subjects from any active school year
+    if (empty($curriculum_subjects)) {
+        $fallback_query = "SELECT c.*, s.subject_name, s.subject_code, sy.year_label,
+                                  c.grade_level_id, c.school_year_id
+                           FROM curriculum c
+                           JOIN subjects s ON c.subject_id = s.id
+                           LEFT JOIN school_years sy ON c.school_year_id = sy.id
+                           WHERE c.grade_level_id = :grade_level_id 
+                           AND s.is_active = 1
+                           ORDER BY c.school_year_id DESC, c.order_sequence ASC, s.subject_name ASC";
+        
+        $fallback_stmt = $db->prepare($fallback_query);
+        $fallback_stmt->bindParam(':grade_level_id', $grade_level_id);
+        $fallback_stmt->execute();
+        
+        $curriculum_subjects = $fallback_stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log("Student curriculum debug - Fallback found " . count($curriculum_subjects) . " subjects");
+    }
+    
+    // Ensure curriculum_subjects is always an array
+    if (!is_array($curriculum_subjects)) {
+        $curriculum_subjects = [];
+    }
+    
+    // Get existing grades for these subjects - Fix the teacher join to use user_id
+    $grades_query = "SELECT sg.*, u.username as teacher_username, 
+                            CONCAT(COALESCE(t.first_name, 'Unknown'), ' ', COALESCE(t.last_name, 'Teacher')) as teacher_name
                      FROM student_grades sg
-                     LEFT JOIN teachers t ON sg.teacher_id = t.id
+                     LEFT JOIN users u ON sg.teacher_id = u.id
+                     LEFT JOIN teachers t ON u.id = t.user_id
                      WHERE sg.student_id = :student_id
                      AND sg.school_year_id = :school_year_id";
     
     $grades_stmt = $db->prepare($grades_query);
-    $grades_stmt->bindParam(':student_id', $student_info['student_id']);
-    $grades_stmt->bindParam(':school_year_id', $student_info['current_school_year_id']);
+    $student_id = $student_info['student_id'];
+    $grades_stmt->bindParam(':student_id', $student_id);
+    $grades_stmt->bindParam(':school_year_id', $school_year_id);
     $grades_stmt->execute();
     
     $existing_grades = $grades_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Ensure existing_grades is always an array
+    if (!is_array($existing_grades)) {
+        $existing_grades = [];
+    }
     
     // Create a lookup array for existing grades by subject_id
     $grades_lookup = [];
@@ -68,36 +120,42 @@ try {
     
     // Combine curriculum subjects with their grades (if any)
     $subjects_with_grades = [];
-    foreach ($curriculum_subjects as $subject) {
-        $subject_data = [
-            'subject_id' => $subject['subject_id'],
-            'subject_code' => $subject['subject_code'],
-            'subject_name' => $subject['subject_name'],
-            'year_label' => $subject['year_label'],
-            'is_required' => $subject['is_required'],
-            'final_grade' => null,
-            'remarks' => null,
-            'teacher_fname' => null,
-            'teacher_lname' => null,
-            'teacher_comments' => null
-        ];
-        
-        // If grade exists for this subject, add grade info
-        if (isset($grades_lookup[$subject['subject_id']])) {
-            $grade_data = $grades_lookup[$subject['subject_id']];
-            $subject_data['final_grade'] = $grade_data['final_grade'];
-            $subject_data['remarks'] = $grade_data['remarks'];
-            $subject_data['teacher_fname'] = $grade_data['teacher_fname'];
-            $subject_data['teacher_lname'] = $grade_data['teacher_lname'];
-            $subject_data['teacher_comments'] = $grade_data['teacher_comments'];
+    if (!empty($curriculum_subjects)) {
+        foreach ($curriculum_subjects as $subject) {
+            $subject_data = [
+                'subject_id' => $subject['subject_id'],
+                'subject_code' => $subject['subject_code'],
+                'subject_name' => $subject['subject_name'],
+                'year_label' => $subject['year_label'] ?? $student_info['year_label'] ?? 'Current Year',
+                'is_required' => $subject['is_required'] ?? 1,
+                'final_grade' => null,
+                'remarks' => null,
+                'teacher_name' => null,
+                'teacher_comments' => null
+            ];
+            
+            // If grade exists for this subject, add grade info
+            if (isset($grades_lookup[$subject['subject_id']])) {
+                $grade_data = $grades_lookup[$subject['subject_id']];
+                $subject_data['final_grade'] = $grade_data['final_grade'];
+                $subject_data['remarks'] = $grade_data['remarks'];
+                $subject_data['teacher_name'] = $grade_data['teacher_name'];
+                $subject_data['teacher_comments'] = $grade_data['teacher_comments'];
+            }
+            
+            $subjects_with_grades[] = $subject_data;
         }
-        
-        $subjects_with_grades[] = $subject_data;
     }
     
 } catch (Exception $e) {
-    $error_message = "Unable to load grades information.";
-    error_log("Student grades error: " . $e->getMessage());
+    $error_message = "Unable to load grades information: " . $e->getMessage();
+    error_log("Student grades error for user_id " . ($user_id ?? $_SESSION['user_id'] ?? 'unknown') . ": " . $e->getMessage());
+    
+    // Additional debugging info
+    if (isset($_SESSION['user_id'])) {
+        error_log("Student grades debug - User ID: " . $_SESSION['user_id']);
+        error_log("Student grades debug - Role: " . ($_SESSION['role'] ?? 'unknown'));
+    }
 }
 
 ob_start();
@@ -110,15 +168,59 @@ ob_start();
 
 <?php if (isset($error_message)): ?>
     <div class="alert alert-danger">
-        <?php echo $error_message; ?>
+        <h4>⚠️ Unable to Load Grades</h4>
+        <p><?php echo htmlspecialchars($error_message); ?></p>
+        
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <div class="debug-info" style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-top: 1rem; font-size: 0.9rem;">
+                <strong>Debug Information:</strong><br>
+                User ID: <?php echo htmlspecialchars($_SESSION['user_id'] ?? 'Not set'); ?><br>
+                Username: <?php echo htmlspecialchars($_SESSION['username'] ?? 'Not set'); ?><br>
+                Role: <?php echo htmlspecialchars($_SESSION['role'] ?? 'Not set'); ?><br>
+                <?php if (isset($student_info)): ?>
+                    Student ID: <?php echo htmlspecialchars($student_info['student_id'] ?? 'Not found'); ?><br>
+                    Grade Level ID: <?php echo htmlspecialchars($student_info['current_grade_level_id'] ?? 'Not set'); ?><br>
+                    School Year ID: <?php echo htmlspecialchars($student_info['current_school_year_id'] ?? 'Not set'); ?><br>
+                <?php endif; ?>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <p><strong>Possible Solutions:</strong></p>
+                <ul>
+                    <li>Contact the registrar to verify your student information is complete</li>
+                    <li>Ensure you are assigned to a grade level and school year</li>
+                    <li>Check if the curriculum has been set up for your grade level</li>
+                    <li>Try logging out and logging back in</li>
+                </ul>
+            </div>
+        <?php endif; ?>
     </div>
 <?php elseif (empty($subjects_with_grades)): ?>
     <div class="alert alert-warning">
         <h4>📚 No Curriculum Subjects Found</h4>
-        <p>No subjects have been assigned to your current grade level for this school year. Please contact your teacher or the school administrator.</p>
+        <p>No subjects have been assigned to your current grade level for this school year. This might be because:</p>
+        <ul>
+            <li>The curriculum has not been set up for your grade level in the current school year</li>
+            <li>Your grade level assignment needs to be updated</li>
+            <li>The curriculum is set up for a different school year</li>
+        </ul>
+        
         <?php if (isset($student_info)): ?>
-            <p><small><strong>Grade Level:</strong> <?php echo htmlspecialchars($student_info['current_grade_level_id']); ?> | <strong>School Year ID:</strong> <?php echo htmlspecialchars($student_info['current_school_year_id']); ?></small></p>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-top: 1rem; font-size: 0.9rem;">
+                <strong>Current Student Information:</strong><br>
+                Grade Level ID: <?php echo htmlspecialchars($student_info['current_grade_level_id'] ?? 'Not set'); ?> 
+                (<?php echo htmlspecialchars($student_info['grade_name'] ?? 'Unknown Grade'); ?>)<br>
+                School Year ID: <?php echo htmlspecialchars($student_info['current_school_year_id'] ?? 'Not set'); ?>
+                (<?php echo htmlspecialchars($student_info['year_label'] ?? 'Unknown Year'); ?>)<br>
+                Student Name: <?php echo htmlspecialchars(($student_info['first_name'] ?? '') . ' ' . ($student_info['last_name'] ?? '')); ?>
+            </div>
         <?php endif; ?>
+        
+        <p style="margin-top: 1rem;"><strong>Please contact:</strong></p>
+        <ul>
+            <li>The registrar to verify your enrollment information</li>
+            <li>The principal or curriculum coordinator to set up subjects for your grade level</li>
+        </ul>
     </div>
 <?php else: ?>
     <div style="background: var(--white); border-radius: 15px; padding: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
@@ -165,8 +267,8 @@ ob_start();
                                 <?php endif; ?>
                             </td>
                             <td style="padding: 1rem; color: var(--black);">
-                                <?php if ($subject['teacher_fname'] && $subject['teacher_lname']): ?>
-                                    <?php echo htmlspecialchars($subject['teacher_fname'] . ' ' . $subject['teacher_lname']); ?>
+                                <?php if ($subject['teacher_name'] && $subject['teacher_name'] !== 'Unknown Teacher'): ?>
+                                    <?php echo htmlspecialchars($subject['teacher_name']); ?>
                                 <?php else: ?>
                                     <span style="color: var(--gray); font-style: italic;">Not assigned</span>
                                 <?php endif; ?>

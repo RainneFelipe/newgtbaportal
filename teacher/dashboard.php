@@ -16,6 +16,9 @@ try {
     $database = new Database();
     $db = $database->connect();
     
+    // Create variables for binding
+    $user_id = $_SESSION['user_id'];
+    
     // Get teacher information
     $query = "SELECT t.*, u.username, u.email, u.created_at as user_created_at
               FROM teachers t
@@ -23,13 +26,34 @@ try {
               WHERE t.user_id = :user_id AND t.is_active = 1";
     
     $stmt = $db->prepare($query);
-    $stmt->bindParam(':user_id', $_SESSION['user_id']);
+    $stmt->bindParam(':user_id', $user_id);
     $stmt->execute();
     
     $teacher_info = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$teacher_info) {
-        throw new Exception("Teacher information not found.");
+    if (!$teacher_info || empty($teacher_info)) {
+        // Try to find user information at least
+        $user_query = "SELECT username, email, created_at FROM users WHERE id = :user_id";
+        $user_stmt = $db->prepare($user_query);
+        $user_stmt->bindParam(':user_id', $user_id);
+        $user_stmt->execute();
+        $user_info = $user_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user_info) {
+            // Create a basic teacher_info array with available data
+            $teacher_info = [
+                'first_name' => 'Teacher',
+                'last_name' => '',
+                'employee_id' => 'N/A',
+                'specialization' => null,
+                'employment_status' => 'Unknown',
+                'email' => $user_info['email'] ?? 'N/A',
+                'username' => $user_info['username'] ?? 'N/A'
+            ];
+        } else {
+            $teacher_info = false;
+            error_log("Teacher dashboard error: No teacher or user record found for user_id: " . $user_id);
+        }
     }
     
     // Get current school year
@@ -51,10 +75,15 @@ try {
               ORDER BY st.is_primary DESC, gl.grade_order, sec.section_name";
     
     $stmt = $db->prepare($query);
-    $stmt->bindParam(':teacher_id', $_SESSION['user_id']);
+    $stmt->bindParam(':teacher_id', $user_id);
     $stmt->execute();
     
     $assigned_sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Ensure assigned_sections is always an array
+    if (!is_array($assigned_sections)) {
+        $assigned_sections = [];
+    }
     
     // Get today's schedule
     $today = date('l'); // Get current day name (Monday, Tuesday, etc.)
@@ -70,18 +99,28 @@ try {
               ORDER BY cs.start_time";
     
     $stmt = $db->prepare($query);
-    $stmt->bindParam(':teacher_id', $_SESSION['user_id']);
+    $stmt->bindParam(':teacher_id', $user_id);
     $stmt->bindParam(':today', $today);
     $stmt->execute();
     
     $today_schedule = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Ensure today_schedule is always an array
+    if (!is_array($today_schedule)) {
+        $today_schedule = [];
+    }
+    
     // Get statistics
-    $total_sections = count($assigned_sections);
-    $primary_sections = count(array_filter($assigned_sections, function($section) { 
-        return $section['is_primary'] == 1; 
-    }));
-    $total_students = array_sum(array_column($assigned_sections, 'student_count'));
+    $total_sections = is_array($assigned_sections) ? count($assigned_sections) : 0;
+    $primary_sections = 0;
+    $total_students = 0;
+    
+    if (is_array($assigned_sections) && !empty($assigned_sections)) {
+        $primary_sections = count(array_filter($assigned_sections, function($section) { 
+            return isset($section['is_primary']) && $section['is_primary'] == 1; 
+        }));
+        $total_students = array_sum(array_column($assigned_sections, 'student_count'));
+    }
     
     // Get subjects that are actually scheduled for teacher's assigned sections
     $query = "SELECT DISTINCT s.id as subject_id, s.subject_name, s.subject_code, 
@@ -96,34 +135,49 @@ try {
               ORDER BY gl.grade_order, sec.section_name, s.subject_name";
     
     $stmt = $db->prepare($query);
-    $stmt->bindParam(':teacher_id', $_SESSION['user_id']);
+    $stmt->bindParam(':teacher_id', $user_id);
     $stmt->execute();
     
     $subjects_available = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Ensure subjects_available is always an array
+    if (!is_array($subjects_available)) {
+        $subjects_available = [];
+    }
+    
     // Get grade completion statistics for each section
     $grade_stats = [];
-    foreach ($assigned_sections as $section) {
-        $query = "SELECT s.id as subject_id, s.subject_name, s.subject_code,
-                         COUNT(DISTINCT st.id) as total_students,
-                         COUNT(DISTINCT sg.student_id) as graded_students
-                  FROM curriculum c
-                  LEFT JOIN subjects s ON c.subject_id = s.id
-                  LEFT JOIN students st ON st.current_section_id = :section_id
-                  LEFT JOIN student_grades sg ON sg.student_id = st.id AND sg.subject_id = s.id 
-                                               AND sg.teacher_id = :teacher_id AND sg.school_year_id = :school_year_id
-                  WHERE c.grade_level_id = :grade_level_id AND s.is_active = 1
-                  GROUP BY s.id
-                  ORDER BY s.subject_name";
-        
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':section_id', $section['id']);
-        $stmt->bindParam(':teacher_id', $_SESSION['user_id']);
-        $stmt->bindParam(':school_year_id', $current_year['id']);
-        $stmt->bindParam(':grade_level_id', $section['grade_level_id']);
-        $stmt->execute();
-        
-        $grade_stats[$section['id']] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (is_array($assigned_sections)) {
+        foreach ($assigned_sections as $section) {
+            if (!isset($section['id']) || !isset($section['grade_level_id'])) {
+                continue; // Skip if essential data is missing
+            }
+            
+            $query = "SELECT s.id as subject_id, s.subject_name, s.subject_code,
+                             COUNT(DISTINCT st.id) as total_students,
+                             COUNT(DISTINCT sg.student_id) as graded_students
+                      FROM curriculum c
+                      LEFT JOIN subjects s ON c.subject_id = s.id
+                      LEFT JOIN students st ON st.current_section_id = :section_id
+                      LEFT JOIN student_grades sg ON sg.student_id = st.id AND sg.subject_id = s.id 
+                                                   AND sg.teacher_id = :teacher_id AND sg.school_year_id = :school_year_id
+                      WHERE c.grade_level_id = :grade_level_id AND s.is_active = 1
+                      GROUP BY s.id
+                      ORDER BY s.subject_name";
+            
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(':section_id', $section['id']);
+            $stmt->bindParam(':teacher_id', $user_id);
+            
+            // Create a variable for school year ID to bind by reference
+            $school_year_id = isset($current_year['id']) ? $current_year['id'] : 1;
+            $stmt->bindParam(':school_year_id', $school_year_id);
+            $stmt->bindParam(':grade_level_id', $section['grade_level_id']);
+            $stmt->execute();
+            
+            $section_stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $grade_stats[$section['id']] = is_array($section_stats) ? $section_stats : [];
+        }
     }
     
     // Get recent announcements with attachment information
@@ -137,20 +191,35 @@ try {
     $stmt->execute();
     $recent_announcements = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Ensure recent_announcements is always an array
+    if (!is_array($recent_announcements)) {
+        $recent_announcements = [];
+    }
+    
     // Get attachments for each announcement
-    foreach ($recent_announcements as &$announcement) {
-        $attachment_query = "SELECT id, filename, original_filename, file_path, mime_type, file_size 
-                            FROM announcement_attachments 
-                            WHERE announcement_id = ? 
-                            ORDER BY created_at";
-        $attachment_stmt = $db->prepare($attachment_query);
-        $attachment_stmt->execute([$announcement['id']]);
-        $announcement['attachments'] = $attachment_stmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($recent_announcements)) {
+        foreach ($recent_announcements as &$announcement) {
+            $attachment_query = "SELECT id, filename, original_filename, file_path, mime_type, file_size 
+                                FROM announcement_attachments 
+                                WHERE announcement_id = ? 
+                                ORDER BY created_at";
+            $attachment_stmt = $db->prepare($attachment_query);
+            $attachment_stmt->execute([$announcement['id']]);
+            $attachments = $attachment_stmt->fetchAll(PDO::FETCH_ASSOC);
+            $announcement['attachments'] = is_array($attachments) ? $attachments : [];
+        }
     }
     
 } catch (Exception $e) {
     $error_message = "Unable to load teacher dashboard data: " . $e->getMessage();
-    error_log("Teacher dashboard error: " . $e->getMessage());
+    error_log("Teacher dashboard error for user_id " . (isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'unknown') . ": " . $e->getMessage());
+    
+    // Additional debugging info
+    if (isset($_SESSION['user_id'])) {
+        error_log("User ID: " . $_SESSION['user_id']);
+        error_log("User role: " . ($_SESSION['role'] ?? 'unknown'));
+        error_log("Username: " . ($_SESSION['username'] ?? 'unknown'));
+    }
 }
 
 ob_start();
@@ -158,15 +227,15 @@ ob_start();
 
 <div class="welcome-section">
     <h1 class="welcome-title">Teacher Dashboard</h1>
-    <p class="welcome-subtitle">Welcome back, <?php echo isset($teacher_info) ? htmlspecialchars($teacher_info['first_name'] . ' ' . $teacher_info['last_name']) : 'Teacher'; ?></p>
+    <p class="welcome-subtitle">Welcome back, <?php echo (isset($teacher_info) && is_array($teacher_info)) ? htmlspecialchars($teacher_info['first_name'] . ' ' . $teacher_info['last_name']) : 'Teacher'; ?></p>
     
-    <?php if (isset($teacher_info)): ?>
+    <?php if (isset($teacher_info) && is_array($teacher_info)): ?>
         <div class="teacher-info">
             <h4>Teacher Information</h4>
             <div class="info-grid">
                 <div class="info-item">
                     <span class="info-label">Employee ID:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['employee_id']); ?></span>
+                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['employee_id'] ?? 'N/A'); ?></span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Specialization:</span>
@@ -174,11 +243,11 @@ ob_start();
                 </div>
                 <div class="info-item">
                     <span class="info-label">Employment Status:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['employment_status']); ?></span>
+                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['employment_status'] ?? 'N/A'); ?></span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Email:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['email']); ?></span>
+                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['email'] ?? 'N/A'); ?></span>
                 </div>
             </div>
         </div>
@@ -187,7 +256,26 @@ ob_start();
 
 <?php if (isset($error_message)): ?>
     <div class="alert alert-danger">
-        <?php echo $error_message; ?>
+        <h4>Access Issue Detected</h4>
+        <p><?php echo $error_message; ?></p>
+        
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <div class="debug-info" style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-top: 1rem; font-size: 0.9rem;">
+                <strong>Debug Information:</strong><br>
+                User ID: <?php echo htmlspecialchars($_SESSION['user_id'] ?? 'Not set'); ?><br>
+                Username: <?php echo htmlspecialchars($_SESSION['username'] ?? 'Not set'); ?><br>
+                Role: <?php echo htmlspecialchars($_SESSION['role'] ?? 'Not set'); ?><br>
+            </div>
+            
+            <div style="margin-top: 1rem;">
+                <p><strong>Possible Solutions:</strong></p>
+                <ul>
+                    <li>Contact the administrator to create your teacher profile</li>
+                    <li>Verify that you have been properly assigned as a teacher</li>
+                    <li>Try logging out and logging back in</li>
+                </ul>
+            </div>
+        <?php endif; ?>
     </div>
 <?php else: ?>
 
@@ -220,7 +308,7 @@ ob_start();
     <div class="stat-card info">
         <div class="stat-icon">📖</div>
         <div class="stat-content">
-            <h3><?php echo count($subjects_available); ?></h3>
+            <h3><?php echo is_array($subjects_available) ? count($subjects_available) : 0; ?></h3>
             <p>Subjects Available to Manage</p>
         </div>
     </div>
@@ -475,12 +563,14 @@ ob_start();
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
     font-weight: 700;
+    color: white;
 }
 
 .welcome-subtitle {
     font-size: 1.2rem;
     opacity: 0.9;
     margin-bottom: 1.5rem;
+    color: white;
 }
 
 .teacher-info {
@@ -493,6 +583,7 @@ ob_start();
 .teacher-info h4 {
     margin-bottom: 1rem;
     font-size: 1.3rem;
+    color: white;
 }
 
 .info-grid {
@@ -509,13 +600,15 @@ ob_start();
 
 .info-label {
     font-size: 0.9rem;
-    opacity: 0.8;
+    opacity: 0.9;
     font-weight: 500;
+    color: white;
 }
 
 .info-value {
     font-size: 1rem;
     font-weight: 600;
+    color: white;
 }
 
 .stats-grid {
