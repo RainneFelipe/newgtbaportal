@@ -14,6 +14,15 @@
     --success: #27AE60;
     --danger: #E74C3C;
     --warning: #F39C12;
+    --info: #3498DB;
+    --success-light: #D5EDDA;
+    --danger-light: #F8D7DA;
+    --warning-light: #FFF3CD;
+    --info-light: #D1ECF1;
+    --success-dark: #155724;
+    --danger-dark: #721C24;
+    --warning-dark: #856404;
+    --info-dark: #0C5460;
     --shadow-light: rgba(46, 134, 171, 0.08);
     --shadow-medium: rgba(46, 134, 171, 0.15);
     --shadow-dark: rgba(46, 134, 171, 0.25);

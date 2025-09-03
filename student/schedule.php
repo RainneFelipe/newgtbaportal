@@ -87,7 +87,7 @@ if (!empty($schedules)) {
     }
 }
 
-$days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+$days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 ob_start();
 ?>
@@ -201,8 +201,16 @@ ob_start();
                 
                 <div class="day-content">
                     <?php if (isset($schedule_by_day[$day]) && !empty($schedule_by_day[$day])): ?>
-                        <?php foreach ($schedule_by_day[$day] as $class): ?>
-                            <?php
+                        <?php 
+                        // Sort classes by start time to handle overlaps better
+                        $day_classes = $schedule_by_day[$day];
+                        usort($day_classes, function($a, $b) {
+                            return strtotime($a['start_time']) - strtotime($b['start_time']);
+                        });
+                        
+                        // Pre-process all classes to determine overlaps
+                        $processed_classes = [];
+                        foreach ($day_classes as $index => $class) {
                             $start_time = strtotime($class['start_time']);
                             $end_time = strtotime($class['end_time']);
                             $start_hour = (int)date('H', $start_time);
@@ -210,16 +218,155 @@ ob_start();
                             $duration_hours = ($end_time - $start_time) / 3600;
                             
                             // Calculate position (starting from 7 AM = 0)
-                            $top_position = (($start_hour - 7) + ($start_minute / 60)) * 60; // 60px per hour
-                            $height = $duration_hours * 60; // 60px per hour
+                            $top_position = (($start_hour - 7) + ($start_minute / 60)) * 80; // 80px per hour
+                            $height = $duration_hours * 80; // 80px per hour
+                            $bottom_position = $top_position + $height;
                             
+                            $processed_classes[$index] = [
+                                'class' => $class,
+                                'top' => $top_position,
+                                'bottom' => $bottom_position,
+                                'height' => $height,
+                                'start_time' => $start_time,
+                                'end_time' => $end_time,
+                                'column' => 0,
+                                'max_columns' => 1
+                            ];
+                        }
+                        
+                        // Determine overlapping groups
+                        $overlap_groups = [];
+                        foreach ($processed_classes as $i => $class1) {
+                            $group_found = false;
+                            
+                            // Check if this class overlaps with any existing group
+                            foreach ($overlap_groups as $group_id => &$group) {
+                                $overlaps_with_group = false;
+                                foreach ($group['classes'] as $class_in_group) {
+                                    $class2 = $processed_classes[$class_in_group];
+                                    // Check for overlap (including touching boundaries)
+                                    if ($class1['top'] < $class2['bottom'] && $class1['bottom'] > $class2['top']) {
+                                        $overlaps_with_group = true;
+                                        break;
+                                    }
+                                }
+                                
+                                if ($overlaps_with_group) {
+                                    $group['classes'][] = $i;
+                                    $group_found = true;
+                                    break;
+                                }
+                            }
+                            
+                            // If no group found, create new group
+                            if (!$group_found) {
+                                $overlap_groups[] = [
+                                    'classes' => [$i],
+                                    'columns' => 1
+                                ];
+                            }
+                        }
+                        
+                        // Merge overlapping groups
+                        $merged = true;
+                        while ($merged) {
+                            $merged = false;
+                            for ($i = 0; $i < count($overlap_groups) - 1; $i++) {
+                                for ($j = $i + 1; $j < count($overlap_groups); $j++) {
+                                    $group1_classes = $overlap_groups[$i]['classes'];
+                                    $group2_classes = $overlap_groups[$j]['classes'];
+                                    
+                                    // Check if any class in group1 overlaps with any class in group2
+                                    $groups_overlap = false;
+                                    foreach ($group1_classes as $class1_idx) {
+                                        foreach ($group2_classes as $class2_idx) {
+                                            $c1 = $processed_classes[$class1_idx];
+                                            $c2 = $processed_classes[$class2_idx];
+                                            if ($c1['top'] < $c2['bottom'] && $c1['bottom'] > $c2['top']) {
+                                                $groups_overlap = true;
+                                                break 2;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if ($groups_overlap) {
+                                        $overlap_groups[$i]['classes'] = array_merge($group1_classes, $group2_classes);
+                                        array_splice($overlap_groups, $j, 1);
+                                        $merged = true;
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Assign columns within each overlap group
+                        foreach ($overlap_groups as &$group) {
+                            $group_classes = array_map(function($idx) use ($processed_classes) {
+                                return $processed_classes[$idx];
+                            }, $group['classes']);
+                            
+                            // Sort by start time within the group
+                            usort($group['classes'], function($a, $b) use ($processed_classes) {
+                                return $processed_classes[$a]['start_time'] - $processed_classes[$b]['start_time'];
+                            });
+                            
+                            // Assign columns using interval scheduling
+                            $columns = [];
+                            foreach ($group['classes'] as $class_idx) {
+                                $class = $processed_classes[$class_idx];
+                                $assigned_column = 0;
+                                
+                                // Find first available column
+                                while (true) {
+                                    $can_use_column = true;
+                                    if (isset($columns[$assigned_column])) {
+                                        foreach ($columns[$assigned_column] as $existing_class_idx) {
+                                            $existing_class = $processed_classes[$existing_class_idx];
+                                            // Check if there's overlap
+                                            if ($class['top'] < $existing_class['bottom'] && $class['bottom'] > $existing_class['top']) {
+                                                $can_use_column = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    if ($can_use_column) {
+                                        if (!isset($columns[$assigned_column])) {
+                                            $columns[$assigned_column] = [];
+                                        }
+                                        $columns[$assigned_column][] = $class_idx;
+                                        $processed_classes[$class_idx]['column'] = $assigned_column;
+                                        break;
+                                    }
+                                    $assigned_column++;
+                                }
+                            }
+                            
+                            $group['columns'] = count($columns);
+                            
+                            // Update max_columns for all classes in this group
+                            foreach ($group['classes'] as $class_idx) {
+                                $processed_classes[$class_idx]['max_columns'] = $group['columns'];
+                            }
+                        }
+                        
+                        foreach ($processed_classes as $index => $class_data): 
+                            $class = $class_data['class'];
                             $schedule_type = $class['schedule_type'] ?? 'unknown';
+                            
+                            // Calculate width and left position for columns
+                            $width = (100 / $class_data['max_columns']);
+                            $left = ($class_data['column'] * $width);
                             ?>
                             <div class="class-block <?php echo $schedule_type; ?>" 
-                                 style="top: <?php echo $top_position; ?>px; height: <?php echo max($height, 50); ?>px;"
+                                 style="top: <?php echo $class_data['top']; ?>px; 
+                                        height: <?php echo max($class_data['height'], 70); ?>px;
+                                        width: <?php echo $width; ?>%;
+                                        left: <?php echo $left; ?>%;
+                                        right: auto;"
                                  title="<?php echo htmlspecialchars($class['activity_display'] ?? 'Unknown'); ?>">
                                 <div class="class-time">
-                                    <?php echo date('g:i A', $start_time); ?> - <?php echo date('g:i A', $end_time); ?>
+                                    <?php echo date('g:i A', $class_data['start_time']); ?> - <?php echo date('g:i A', $class_data['end_time']); ?>
                                 </div>
                                 <div class="class-title">
                                     <?php echo htmlspecialchars($class['activity_display'] ?? 'Unknown'); ?>
@@ -527,8 +674,8 @@ ob_start();
 /* Weekly Grid */
 .weekly-grid {
     display: grid;
-    grid-template-columns: 100px repeat(6, 1fr);
-    height: 660px; /* 11 hours * 60px */
+    grid-template-columns: 100px repeat(5, 1fr);
+    height: 880px; /* 11 hours * 80px */
     position: relative;
     gap: 0;
     border: 1px solid var(--border-gray);
@@ -540,7 +687,7 @@ ob_start();
 }
 
 .time-header {
-    height: 60px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -551,7 +698,7 @@ ob_start();
 }
 
 .time-slot {
-    height: 60px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -571,7 +718,7 @@ ob_start();
 }
 
 .day-header {
-    height: 60px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -583,32 +730,35 @@ ob_start();
 
 .day-content {
     position: relative;
-    height: 600px; /* 10 hours * 60px (7 AM to 5 PM) */
+    height: 800px; /* 10 hours * 80px (7 AM to 5 PM) */
     background: 
         repeating-linear-gradient(
             0deg,
             transparent,
-            transparent 59px,
-            var(--border-gray) 59px,
-            var(--border-gray) 60px
+            transparent 79px,
+            var(--border-gray) 79px,
+            var(--border-gray) 80px
         );
     overflow: visible;
 }
 
 .class-block {
     position: absolute;
-    left: 4px;
-    right: 4px;
     border-radius: 8px;
     padding: 6px 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    overflow: visible;
+    overflow: hidden;
     border-left: 4px solid;
     background: var(--white);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
-    min-height: 50px;
+    min-height: 70px;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    margin: 2px 2px;
 }
 
 .class-block:hover {
@@ -616,6 +766,7 @@ ob_start();
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     z-index: 10;
     border-radius: 10px;
+    overflow: visible;
 }
 
 .class-block.subject {
@@ -629,26 +780,36 @@ ob_start();
 }
 
 .class-time {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     color: var(--gray);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 .class-title {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--black);
     line-height: 1.1;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
-    max-height: none;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-height: 0;
 }
 
 .class-teacher, .class-room {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     color: var(--gray);
     display: flex;
     align-items: center;
@@ -656,6 +817,10 @@ ob_start();
     margin-bottom: 1px;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
 }
 
 .class-teacher i, .class-room i {
@@ -793,7 +958,7 @@ ob_start();
 /* Responsive Design */
 @media (max-width: 1200px) {
     .weekly-grid {
-        grid-template-columns: 80px repeat(6, 1fr);
+        grid-template-columns: 80px repeat(5, 1fr);
     }
     
     .time-slot {
@@ -838,37 +1003,50 @@ ob_start();
     }
     
     .weekly-grid {
-        grid-template-columns: 60px repeat(6, 1fr);
-        height: 480px;
+        grid-template-columns: 60px repeat(5, 1fr);
+        height: 640px;
         font-size: 0.75rem;
     }
     
     .day-content {
-        height: 420px;
+        height: 560px;
     }
     
     .time-slot, .day-header {
-        height: 40px;
+        height: 56px;
         font-size: 0.7rem;
     }
     
     .class-block {
-        padding: 3px 4px;
-        font-size: 0.7rem;
-        min-height: 35px;
+        padding: 3px 5px;
+        font-size: 0.65rem;
+        min-height: 45px;
+        overflow: hidden;
+        margin: 1px 1px;
+    }
+    
+    .class-block:hover {
         overflow: visible;
+        transform: scale(1.05);
+    }
+    
+    .class-time {
+        font-size: 0.6rem;
+        line-height: 1.0;
+        margin-bottom: 1px;
     }
     
     .class-title {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         line-height: 1.0;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
+        -webkit-line-clamp: 1;
+        max-height: 0.65rem;
     }
     
     .class-teacher, .class-room {
-        font-size: 0.6rem;
-        word-wrap: break-word;
-        overflow-wrap: break-word;
+        font-size: 0.55rem;
+        display: none; /* Hide on mobile for more space */
     }
     
     .summary-grid {
@@ -887,6 +1065,26 @@ ob_start();
         gap: 0.5rem;
     }
     
+    .class-block {
+        padding: 2px 4px;
+        font-size: 0.6rem;
+        min-height: 40px;
+        margin: 1px 0.5px;
+    }
+    
+    .class-time {
+        font-size: 0.55rem;
+        margin-bottom: 0;
+    }
+    
+    .class-title {
+        font-size: 0.6rem;
+        line-height: 1.0;
+        -webkit-line-clamp: 1;
+        max-height: 0.6rem;
+        margin-bottom: 0;
+    }
+    
     .summary-grid {
         grid-template-columns: 1fr;
     }
@@ -901,6 +1099,66 @@ ob_start();
         max-width: 300px;
         justify-content: center;
     }
+}
+
+/* Additional styles for different block heights */
+.class-block[style*="height: 40px"], 
+.class-block[style*="height: 50px"],
+.class-block[style*="height: 60px"],
+.class-block[style*="height: 70px"] {
+    padding: 3px 5px;
+}
+
+.class-block[style*="height: 40px"] .class-title,
+.class-block[style*="height: 50px"] .class-title,
+.class-block[style*="height: 60px"] .class-title {
+    font-size: 0.7rem;
+    -webkit-line-clamp: 1;
+    margin-bottom: 0;
+}
+
+.class-block[style*="height: 40px"] .class-time,
+.class-block[style*="height: 50px"] .class-time,
+.class-block[style*="height: 60px"] .class-time {
+    font-size: 0.65rem;
+    margin-bottom: 1px;
+}
+
+.class-block[style*="height: 40px"] .class-teacher,
+.class-block[style*="height: 40px"] .class-room,
+.class-block[style*="height: 50px"] .class-teacher,
+.class-block[style*="height: 50px"] .class-room {
+    display: none;
+}
+
+/* Ensure content doesn't overflow container */
+.day-content {
+    overflow: hidden;
+    position: relative;
+}
+
+.class-block * {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Add subtle border for overlapping blocks */
+.class-block[style*="width: 50%"],
+.class-block[style*="width: 33.33"] {
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.class-block[style*="left: 0%"] {
+    border-radius: 8px 4px 4px 8px;
+}
+
+.class-block[style*="left: 50%"],
+.class-block[style*="left: 33.33%"] {
+    border-radius: 4px 8px 8px 4px;
+}
+
+.class-block[style*="left: 66.66%"] {
+    border-radius: 4px 8px 8px 4px;
 }
 
 /* Print Styles */

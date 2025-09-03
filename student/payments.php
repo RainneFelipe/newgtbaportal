@@ -151,12 +151,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_payment'])) {
                                                  VALUES 
                                                  (:payment_id, :original_filename, :stored_filename, :file_path, :file_size, :mime_type)";
                                 $upload_stmt = $db->prepare($upload_insert);
+                                
+                                // Assign values to variables for bindParam
+                                $original_filename = $_FILES['additional_files']['name'][$i];
+                                $file_path = 'uploads/payment_proofs/' . $new_filename;
+                                $file_size = $_FILES['additional_files']['size'][$i];
+                                $mime_type = $_FILES['additional_files']['type'][$i];
+                                
                                 $upload_stmt->bindParam(':payment_id', $payment_id);
-                                $upload_stmt->bindParam(':original_filename', $_FILES['additional_files']['name'][$i]);
+                                $upload_stmt->bindParam(':original_filename', $original_filename);
                                 $upload_stmt->bindParam(':stored_filename', $new_filename);
-                                $upload_stmt->bindParam(':file_path', 'uploads/payment_proofs/' . $new_filename);
-                                $upload_stmt->bindParam(':file_size', $_FILES['additional_files']['size'][$i]);
-                                $upload_stmt->bindParam(':mime_type', $_FILES['additional_files']['type'][$i]);
+                                $upload_stmt->bindParam(':file_path', $file_path);
+                                $upload_stmt->bindParam(':file_size', $file_size);
+                                $upload_stmt->bindParam(':mime_type', $mime_type);
                                 $upload_stmt->execute();
                                 
                                 $upload_count++;
