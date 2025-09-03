@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Aug 18, 2025 at 01:02 PM
+-- Generation Time: Sep 03, 2025 at 07:03 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -535,7 +535,8 @@ CREATE TABLE `section_teachers` (
 
 INSERT INTO `section_teachers` (`id`, `section_id`, `teacher_id`, `is_primary`, `assigned_date`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
 (10, 6, 12, 0, '2025-07-30', 1, 4, '2025-07-30 10:56:18', '2025-07-30 10:56:18'),
-(11, 17, 11, 0, '2025-08-13', 1, 4, '2025-08-13 12:46:30', '2025-08-13 12:46:30');
+(11, 17, 11, 0, '2025-08-13', 1, 4, '2025-08-13 12:46:30', '2025-08-13 12:46:30'),
+(12, 6, 11, 0, '2025-09-03', 1, 4, '2025-09-03 06:54:50', '2025-09-03 06:54:50');
 
 -- --------------------------------------------------------
 
@@ -873,6 +874,13 @@ CREATE TABLE `student_grades` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `teacher_id` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `student_grades`
+--
+
+INSERT INTO `student_grades` (`id`, `student_id`, `subject_id`, `school_year_id`, `final_grade`, `remarks`, `teacher_comments`, `date_recorded`, `recorded_by`, `created_at`, `updated_at`, `teacher_id`) VALUES
+(7, 241, 15, 2, 99.00, 'Passed', NULL, '2025-09-03', 11, '2025-09-03 06:55:43', '2025-09-03 06:55:43', 11);
 
 -- --------------------------------------------------------
 
@@ -1952,7 +1960,7 @@ ALTER TABLE `sections`
 -- AUTO_INCREMENT for table `section_teachers`
 --
 ALTER TABLE `section_teachers`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `students`
@@ -1970,7 +1978,7 @@ ALTER TABLE `student_enrollments`
 -- AUTO_INCREMENT for table `student_grades`
 --
 ALTER TABLE `student_grades`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `student_guardians`
