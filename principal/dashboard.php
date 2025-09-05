@@ -289,7 +289,7 @@ ob_start();
                             <?php endforeach; ?>
                         </div>
                         <div class="card-footer">
-                            <a href="announcements.php" class="btn btn-sm btn-outline">View All Announcements</a>
+                            <a href="../shared/announcements.php" class="btn btn-sm btn-outline">View All Announcements</a>
                         </div>
                     <?php else: ?>
                         <p class="no-data">No recent announcements.</p>

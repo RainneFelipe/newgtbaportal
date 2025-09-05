@@ -83,7 +83,7 @@ ob_start();
 
 <!-- Admin Features Grid -->
 <div class="admin-features">
-    <h2 class="section-title">Administrative Functions</h2>
+    <h2 class="admin-section-title">Administrative Functions</h2>
     
     <div class="dashboard-grid">
         <!-- User Management -->
@@ -132,7 +132,7 @@ ob_start();
 <!-- Recent Activity -->
 <?php if (!empty($recent_logs)): ?>
 <div class="recent-activity">
-    <h2 class="section-title">Recent System Activity</h2>
+    <h2 class="admin-section-title">Recent System Activity</h2>
     <div class="activity-list">
         <?php foreach ($recent_logs as $log): ?>
             <div class="activity-item">
@@ -157,7 +157,7 @@ ob_start();
 <!-- Recent Announcements -->
 <?php if (!empty($recent_announcements)): ?>
 <div class="recent-activity">
-    <h2 class="section-title">Recent Announcements</h2>
+    <h2 class="admin-section-title">Recent Announcements</h2>
     <div class="activity-list">
         <?php foreach ($recent_announcements as $announcement): ?>
             <div class="activity-item clickable-announcement" 
@@ -185,14 +185,14 @@ ob_start();
         <?php endforeach; ?>
     </div>
     <div class="text-center" style="margin-top: 1rem;">
-        <a href="announcements.php" class="btn btn-outline">View All Announcements</a>
+        <a href="../shared/announcements.php" class="btn btn-outline">View All Announcements</a>
     </div>
 </div>
 <?php endif; ?>
 
 <!-- Quick Actions -->
 <div class="quick-actions">
-    <h2 class="section-title">Quick Actions</h2>
+    <h2 class="admin-section-title">Quick Actions</h2>
     <div class="action-buttons">
         <a href="users.php?action=create" class="btn btn-primary">
             <span>➕</span> Create New User
@@ -249,7 +249,9 @@ ob_start();
     margin-bottom: 2rem;
 }
 
-.section-title {
+.admin-features .admin-section-title,
+.recent-activity .admin-section-title,
+.quick-actions .admin-section-title {
     color: var(--primary);
     margin-bottom: 1rem;
     font-size: 1.5rem;

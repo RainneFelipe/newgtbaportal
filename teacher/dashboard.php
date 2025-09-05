@@ -518,7 +518,7 @@ ob_start();
         <?php endforeach; ?>
     </div>
     <div class="announcements-footer">
-        <a href="../principal/announcements.php" class="btn btn-outline">View All Announcements</a>
+        <a href="../shared/announcements.php" class="btn btn-outline">View All Announcements</a>
     </div>
 </div>
 <?php endif; ?>

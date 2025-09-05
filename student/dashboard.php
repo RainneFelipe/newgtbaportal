@@ -91,7 +91,7 @@ ob_start();
         <?php endforeach; ?>
     </div>
     <div class="announcements-footer">
-        <a href="announcements.php" class="btn btn-outline">View All Announcements</a>
+        <a href="../shared/announcements.php" class="btn btn-outline">View All Announcements</a>
     </div>
 </div>
 <?php endif; ?>
@@ -105,7 +105,14 @@ ob_start();
     </div>
     
     <div class="dashboard-card">
-        <div class="card-icon">📅</div>
+        <div class="card-icon">�</div>
+        <h3 class="card-title">Grade History</h3>
+        <p class="card-description">View your grades from previous school years and track your academic progress.</p>
+        <a href="grade_history.php" class="card-link">View History</a>
+    </div>
+    
+    <div class="dashboard-card">
+        <div class="card-icon">�📅</div>
         <h3 class="card-title">Class Schedule</h3>
         <p class="card-description">View your weekly class schedule and room assignments.</p>
         <a href="schedule.php" class="card-link">View Schedule</a>

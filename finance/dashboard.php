@@ -438,7 +438,7 @@ ob_start();
     </div>
     
     <div style="text-align: center; margin-top: 1rem;">
-        <a href="announcements.php" style="display: inline-block; background: transparent; border: 2px solid var(--primary-blue); color: var(--primary-blue); padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;">
+        <a href="../shared/announcements.php" style="display: inline-block; background: transparent; border: 2px solid var(--primary-blue); color: var(--primary-blue); padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none; font-weight: 600; transition: all 0.3s ease;">
             View All Announcements
         </a>
     </div>

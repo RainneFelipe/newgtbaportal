@@ -256,6 +256,12 @@ if (isset($_SESSION['user_id'])) {
                         </a>
                     </li>
                     <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>student/grade_history.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'grade_history.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-history"></i>
+                            <span>Grade History</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>student/schedule.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'schedule.php') ? 'active' : ''; ?>">
                             <i class="fas fa-calendar-alt"></i>
                             <span>Schedule</span>
@@ -285,6 +291,12 @@ if (isset($_SESSION['user_id'])) {
                             <span>My Section</span>
                         </a>
                     </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Announcements</span>
+                        </a>
+                    </li>
 
                 <?php elseif ($_SESSION['role'] === 'teacher'): ?>
                     <li class="menu-item">
@@ -303,6 +315,12 @@ if (isset($_SESSION['user_id'])) {
                         <a href="<?php echo $base_url ?? '../'; ?>teacher/grades.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'grades.php') ? 'active' : ''; ?>">
                             <i class="fas fa-clipboard-check"></i>
                             <span>Manage Grades</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Announcements</span>
                         </a>
                     </li>
 
@@ -338,6 +356,15 @@ if (isset($_SESSION['user_id'])) {
                         <a href="<?php echo $base_url ?? '../'; ?>admin/audit_logs.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'audit_logs.php') ? 'active' : ''; ?>">
                             <i class="fas fa-history"></i>
                             <span>Audit Logs</span>
+                        </a>
+                    </li>
+                    <li class="menu-section">
+                        <span class="section-title">Communication</span>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Announcements</span>
                         </a>
                     </li>
 
@@ -381,6 +408,15 @@ if (isset($_SESSION['user_id'])) {
                             <span>Financial Reports</span>
                         </a>
                     </li>
+                    <li class="menu-section">
+                        <span class="section-title">Communication</span>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Announcements</span>
+                        </a>
+                    </li>
 
                 <?php elseif ($_SESSION['role'] === 'registrar'): ?>
                     <li class="menu-item">
@@ -413,6 +449,15 @@ if (isset($_SESSION['user_id'])) {
                             <span>Enrollment Reports</span>
                         </a>
                     </li>
+                    <li class="menu-section">
+                        <span class="section-title">Communication</span>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-bullhorn"></i>
+                            <span>Announcements</span>
+                        </a>
+                    </li>
 
                 <?php elseif ($_SESSION['role'] === 'principal'): ?>
                     <li class="menu-item">
@@ -442,7 +487,13 @@ if (isset($_SESSION['user_id'])) {
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>principal/announcements.php" class="menu-link">
                             <i class="fas fa-bullhorn"></i>
-                            <span>Announcements</span>
+                            <span>Manage Announcements</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-eye"></i>
+                            <span>View All Announcements</span>
                         </a>
                     </li>
                 <?php endif; ?>

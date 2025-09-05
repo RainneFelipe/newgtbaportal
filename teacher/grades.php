@@ -88,19 +88,19 @@ try {
                     $remarks = $grade_data['remarks'] ?? '';
                     
                     if ($final_grade !== null && $final_grade !== '') {
-                        // Check if grade record exists
-                        $check_query = "SELECT id FROM student_grades 
-                                       WHERE student_id = ? AND subject_id = ? AND teacher_id = ? AND school_year_id = ?";
+                        // Check if grade record exists (removed teacher_id filter)
+                        $check_query = "SELECT id, teacher_id FROM student_grades 
+                                       WHERE student_id = ? AND subject_id = ? AND school_year_id = ?";
                         $check_stmt = $db->prepare($check_query);
-                        $check_stmt->execute([$student_id, $subject_id, $_SESSION['user_id'], $current_year['id']]);
+                        $check_stmt->execute([$student_id, $subject_id, $current_year['id']]);
                         
                         if ($existing = $check_stmt->fetch()) {
-                            // Update existing grade
+                            // Update existing grade (keep original teacher_id but update recorded_by)
                             $update_query = "UPDATE student_grades 
-                                           SET final_grade = ?, remarks = ?, updated_at = NOW()
+                                           SET final_grade = ?, remarks = ?, recorded_by = ?, updated_at = NOW()
                                            WHERE id = ?";
                             $update_stmt = $db->prepare($update_query);
-                            $update_stmt->execute([$final_grade, $remarks, $existing['id']]);
+                            $update_stmt->execute([$final_grade, $remarks, $_SESSION['user_id'], $existing['id']]);
                         } else {
                             // Insert new grade
                             $insert_query = "INSERT INTO student_grades (student_id, subject_id, teacher_id, school_year_id, final_grade, remarks, date_recorded, recorded_by)
@@ -147,19 +147,20 @@ try {
             $selected_section = $verify_result;
             $selected_subject = $verify_result;
             
-            // Get students and their grades
+            // Get students and their grades (removed teacher_id filter to allow any teacher to see all grades)
             $query = "SELECT st.id as student_id, st.first_name, st.last_name, st.middle_name, st.student_id as student_number,
-                             sg.final_grade, sg.remarks, sg.id as grade_id
+                             sg.final_grade, sg.remarks, sg.id as grade_id, sg.teacher_id as original_teacher_id,
+                             u.username as original_teacher_name
                       FROM students st
                       LEFT JOIN student_grades sg ON st.id = sg.student_id 
                                                    AND sg.subject_id = ? 
-                                                   AND sg.teacher_id = ? 
                                                    AND sg.school_year_id = ?
+                      LEFT JOIN users u ON sg.teacher_id = u.id
                       WHERE st.current_section_id = ? 
                       ORDER BY st.last_name, st.first_name";
             
             $stmt = $db->prepare($query);
-            $stmt->execute([$selected_subject_id, $_SESSION['user_id'], $current_year['id'], $selected_section_id]);
+            $stmt->execute([$selected_subject_id, $current_year['id'], $selected_section_id]);
             
             $students_with_grades = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -240,7 +241,7 @@ ob_start();
             </div>
             
             <div class="form-help">
-                <p><strong>Note:</strong> As a teacher assigned to sections, you can manage grades for ALL subjects taught in your assigned sections, not just the subjects you personally teach.</p>
+                <p><strong>Note:</strong> As a teacher assigned to sections, you can manage grades for ALL subjects taught in your assigned sections, not just the subjects you personally teach. You can also view and edit grades entered by other teachers.</p>
             </div>
         </form>
     <?php endif; ?>
@@ -550,6 +551,16 @@ ob_start();
 .status-badge.pending {
     background: #fef3c7;
     color: #92400e;
+}
+
+.original-teacher {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.text-muted {
+    color: #6b7280 !important;
 }
 
 .form-actions {
