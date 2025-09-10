@@ -147,6 +147,13 @@ ob_start();
             <p class="card-description">Generate enrollment reports by grade level, section, and school year. Track enrollment trends and statistics.</p>
             <a href="enrollment_reports.php" class="card-link">View Reports</a>
         </div>
+        
+        <div class="dashboard-card">
+            <div class="card-icon">📚</div>
+            <h3 class="card-title">Student Grade History</h3>
+            <p class="card-description">View complete academic records and grade history for any student. Track student progress across school years.</p>
+            <a href="student_grade_history.php" class="card-link">View Grade History</a>
+        </div>
     </div>
 
     <!-- Recent Activity Section -->

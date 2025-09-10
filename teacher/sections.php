@@ -113,7 +113,7 @@ try {
         }
         
         // Get subjects for this section
-        $query = "SELECT DISTINCT s.subject_name, s.subject_code, 
+        $query = "SELECT DISTINCT s.id as subject_id, s.subject_name, s.subject_code, 
                          t.first_name, t.last_name, cs.teacher_id
                   FROM class_schedules cs
                   LEFT JOIN subjects s ON cs.subject_id = s.id
@@ -348,7 +348,7 @@ ob_start();
                         </div>
                         <?php if ($subject['teacher_id'] == $_SESSION['user_id']): ?>
                             <div class="subject-actions">
-                                <a href="grades.php?section_id=<?php echo $selected_section_id; ?>&subject_id=<?php echo $subject['subject_code']; ?>" class="btn btn-primary btn-sm">Manage Grades</a>
+                                <a href="grades.php?section_id=<?php echo $selected_section_id; ?>&subject_id=<?php echo $subject['subject_id']; ?>" class="btn btn-primary btn-sm">Manage Grades</a>
                             </div>
                         <?php endif; ?>
                     </div>

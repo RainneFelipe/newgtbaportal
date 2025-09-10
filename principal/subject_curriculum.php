@@ -166,11 +166,34 @@ try {
     $stats = ['active_subjects' => 0, 'inactive_subjects' => 0, 'total_assignments' => 0, 'grades_with_subjects' => 0];
 }
 
-// Get all subjects
-$subjects_query = "SELECT * FROM subjects ORDER BY is_active DESC, subject_code ASC";
+// Pagination setup for subjects
+$subjects_page = isset($_GET['subjects_page']) ? (int)$_GET['subjects_page'] : 1;
+$subjects_per_page = 10;
+$subjects_offset = ($subjects_page - 1) * $subjects_per_page;
+
+// Pagination setup for curriculum
+$curriculum_page = isset($_GET['curriculum_page']) ? (int)$_GET['curriculum_page'] : 1;
+$curriculum_per_page = 15;
+$curriculum_offset = ($curriculum_page - 1) * $curriculum_per_page;
+
+// Get total count of subjects for pagination
+$subjects_count_query = "SELECT COUNT(*) as total FROM subjects";
+$subjects_count_stmt = $db->prepare($subjects_count_query);
+$subjects_count_stmt->execute();
+$total_subjects = $subjects_count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
+$subjects_total_pages = ceil($total_subjects / $subjects_per_page);
+
+// Get subjects with pagination
+$subjects_query = "SELECT * FROM subjects ORDER BY is_active DESC, subject_code ASC LIMIT $subjects_per_page OFFSET $subjects_offset";
 $subjects_stmt = $db->prepare($subjects_query);
 $subjects_stmt->execute();
 $subjects = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get all subjects for dropdowns (not paginated)
+$all_subjects_query = "SELECT * FROM subjects WHERE is_active = 1 ORDER BY subject_code ASC";
+$all_subjects_stmt = $db->prepare($all_subjects_query);
+$all_subjects_stmt->execute();
+$all_subjects = $all_subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get all grade levels
 $grades_query = "SELECT * FROM grade_levels WHERE is_active = 1 ORDER BY grade_order ASC";
@@ -184,13 +207,21 @@ $years_stmt = $db->prepare($years_query);
 $years_stmt->execute();
 $school_years = $years_stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get curriculum assignments with details
+// Get total count of curriculum assignments for pagination
+$curriculum_count_query = "SELECT COUNT(*) as total FROM curriculum";
+$curriculum_count_stmt = $db->prepare($curriculum_count_query);
+$curriculum_count_stmt->execute();
+$total_curriculum = $curriculum_count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
+$curriculum_total_pages = ceil($total_curriculum / $curriculum_per_page);
+
+// Get curriculum assignments with details and pagination
 $curriculum_query = "SELECT c.*, s.subject_code, s.subject_name, gl.grade_name, sy.year_label, s.is_active as subject_active
                      FROM curriculum c
                      JOIN subjects s ON c.subject_id = s.id
                      JOIN grade_levels gl ON c.grade_level_id = gl.id
                      JOIN school_years sy ON c.school_year_id = sy.id
-                     ORDER BY sy.is_active DESC, gl.grade_order ASC, c.order_sequence ASC";
+                     ORDER BY sy.is_active DESC, gl.grade_order ASC, c.order_sequence ASC
+                     LIMIT $curriculum_per_page OFFSET $curriculum_offset";
 $curriculum_stmt = $db->prepare($curriculum_query);
 $curriculum_stmt->execute();
 $curriculum_assignments = $curriculum_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -268,13 +299,13 @@ ob_start();
 <!-- Tabs Navigation -->
 <div class="tabs-container" style="margin-bottom: 2rem;">
     <div class="tabs" style="display: flex; background: var(--white); border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
-        <button class="tab-btn active" onclick="showTab('subjects')" style="flex: 1; padding: 1rem; border: none; background: var(--primary-blue); color: white; cursor: pointer; transition: all 0.3s;">
+        <button class="tab-btn active" onclick="showTab('subjects', event)" style="flex: 1; padding: 1rem; border: none; background: var(--primary-blue); color: white; cursor: pointer; transition: all 0.3s;">
             Manage Subjects
         </button>
-        <button class="tab-btn" onclick="showTab('curriculum')" style="flex: 1; padding: 1rem; border: none; background: var(--light-gray); color: var(--black); cursor: pointer; transition: all 0.3s;">
+        <button class="tab-btn" onclick="showTab('curriculum', event)" style="flex: 1; padding: 1rem; border: none; background: var(--light-gray); color: var(--black); cursor: pointer; transition: all 0.3s;">
             Curriculum Assignments
         </button>
-        <button class="tab-btn" onclick="showTab('assign')" style="flex: 1; padding: 1rem; border: none; background: var(--light-gray); color: var(--black); cursor: pointer; transition: all 0.3s;">
+        <button class="tab-btn" onclick="showTab('assign', event)" style="flex: 1; padding: 1rem; border: none; background: var(--light-gray); color: var(--black); cursor: pointer; transition: all 0.3s;">
             Assign to Curriculum
         </button>
     </div>
@@ -328,6 +359,42 @@ ob_start();
             </tbody>
         </table>
     </div>
+    
+    <!-- Subjects Pagination -->
+    <?php if ($subjects_total_pages > 1): ?>
+        <div style="margin-top: 2rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+            <?php if ($subjects_page > 1): ?>
+                <a href="?subjects_page=<?= $subjects_page - 1 ?><?= isset($_GET['curriculum_page']) ? '&curriculum_page=' . $_GET['curriculum_page'] : '' ?>#subjects-tab" 
+                   style="padding: 0.75rem 1rem; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    ← Previous
+                </a>
+            <?php endif; ?>
+            
+            <?php
+            $start_page = max(1, $subjects_page - 2);
+            $end_page = min($subjects_total_pages, $subjects_page + 2);
+            ?>
+            
+            <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                <a href="?subjects_page=<?= $i ?><?= isset($_GET['curriculum_page']) ? '&curriculum_page=' . $_GET['curriculum_page'] : '' ?>#subjects-tab" 
+                   style="padding: 0.75rem 1rem; background: <?= $i == $subjects_page ? 'var(--dark-blue)' : 'var(--light-gray)' ?>; 
+                          color: <?= $i == $subjects_page ? 'white' : 'var(--black)' ?>; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    <?= $i ?>
+                </a>
+            <?php endfor; ?>
+            
+            <?php if ($subjects_page < $subjects_total_pages): ?>
+                <a href="?subjects_page=<?= $subjects_page + 1 ?><?= isset($_GET['curriculum_page']) ? '&curriculum_page=' . $_GET['curriculum_page'] : '' ?>#subjects-tab" 
+                   style="padding: 0.75rem 1rem; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    Next →
+                </a>
+            <?php endif; ?>
+        </div>
+        
+        <div style="text-align: center; margin-top: 1rem; color: var(--gray); font-size: 0.9rem;">
+            Showing <?= ($subjects_offset + 1) ?> to <?= min($subjects_offset + $subjects_per_page, $total_subjects) ?> of <?= $total_subjects ?> subjects
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Curriculum Tab -->
@@ -381,6 +448,42 @@ ob_start();
             </tbody>
         </table>
     </div>
+    
+    <!-- Curriculum Pagination -->
+    <?php if ($curriculum_total_pages > 1): ?>
+        <div style="margin-top: 2rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem;">
+            <?php if ($curriculum_page > 1): ?>
+                <a href="?curriculum_page=<?= $curriculum_page - 1 ?><?= isset($_GET['subjects_page']) ? '&subjects_page=' . $_GET['subjects_page'] : '' ?>#curriculum-tab" 
+                   style="padding: 0.75rem 1rem; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    ← Previous
+                </a>
+            <?php endif; ?>
+            
+            <?php
+            $start_page = max(1, $curriculum_page - 2);
+            $end_page = min($curriculum_total_pages, $curriculum_page + 2);
+            ?>
+            
+            <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                <a href="?curriculum_page=<?= $i ?><?= isset($_GET['subjects_page']) ? '&subjects_page=' . $_GET['subjects_page'] : '' ?>#curriculum-tab" 
+                   style="padding: 0.75rem 1rem; background: <?= $i == $curriculum_page ? 'var(--dark-blue)' : 'var(--light-gray)' ?>; 
+                          color: <?= $i == $curriculum_page ? 'white' : 'var(--black)' ?>; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    <?= $i ?>
+                </a>
+            <?php endfor; ?>
+            
+            <?php if ($curriculum_page < $curriculum_total_pages): ?>
+                <a href="?curriculum_page=<?= $curriculum_page + 1 ?><?= isset($_GET['subjects_page']) ? '&subjects_page=' . $_GET['subjects_page'] : '' ?>#curriculum-tab" 
+                   style="padding: 0.75rem 1rem; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    Next →
+                </a>
+            <?php endif; ?>
+        </div>
+        
+        <div style="text-align: center; margin-top: 1rem; color: var(--gray); font-size: 0.9rem;">
+            Showing <?= ($curriculum_offset + 1) ?> to <?= min($curriculum_offset + $curriculum_per_page, $total_curriculum) ?> of <?= $total_curriculum ?> curriculum assignments
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Assign Tab -->
@@ -417,12 +520,10 @@ ob_start();
             <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Subject:</label>
             <select name="subject_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
                 <option value="">Select Subject</option>
-                <?php foreach ($subjects as $subject): ?>
-                    <?php if ($subject['is_active']): ?>
-                    <option value="<?php echo $subject['id']; ?>">
-                        <?php echo htmlspecialchars($subject['subject_code'] . ' - ' . $subject['subject_name']); ?>
-                    </option>
-                    <?php endif; ?>
+                <?php foreach ($all_subjects as $subject): ?>
+                <option value="<?php echo $subject['id']; ?>">
+                    <?php echo htmlspecialchars($subject['subject_code'] . ' - ' . $subject['subject_name']); ?>
+                </option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -574,28 +675,6 @@ ob_start();
 </div>
 
 <script>
-function showTab(tabName) {
-    // Hide all tab contents
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.style.display = 'none';
-    });
-    
-    // Remove active class from all tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.style.background = 'var(--light-gray)';
-        btn.style.color = 'var(--black)';
-        btn.classList.remove('active');
-    });
-    
-    // Show selected tab content
-    document.getElementById(tabName + '-tab').style.display = 'block';
-    
-    // Add active class to clicked button
-    event.target.style.background = 'var(--primary-blue)';
-    event.target.style.color = 'white';
-    event.target.classList.add('active');
-}
-
 function showAddSubjectModal() {
     document.getElementById('addSubjectModal').style.display = 'block';
 }
@@ -669,6 +748,60 @@ document.addEventListener('click', function(event) {
         }
     });
 });
+
+// Handle URL anchors for tab switching
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    if (hash) {
+        const tabName = hash.replace('#', '').replace('-tab', '');
+        if (['subjects', 'curriculum', 'assign'].includes(tabName)) {
+            // Find the corresponding tab button and click it
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                let shouldClick = false;
+                const btnText = btn.textContent.toLowerCase().trim();
+                
+                if (tabName === 'subjects' && btnText.includes('manage subjects')) {
+                    shouldClick = true;
+                } else if (tabName === 'curriculum' && btnText === 'curriculum assignments') {
+                    shouldClick = true;
+                } else if (tabName === 'assign' && btnText === 'assign to curriculum') {
+                    shouldClick = true;
+                }
+                
+                if (shouldClick) {
+                    btn.click();
+                }
+            });
+        }
+    }
+});
+
+// Update showTab function to handle URL updates
+function showTab(tabName, event) {
+    // Hide all tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.style.background = 'var(--light-gray)';
+        btn.style.color = 'var(--black)';
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabName + '-tab').style.display = 'block';
+    
+    // Add active class to clicked button
+    event.target.style.background = 'var(--primary-blue)';
+    event.target.style.color = 'white';
+    event.target.classList.add('active');
+    
+    // Update URL hash without page reload
+    history.replaceState(null, null, '#' + tabName + '-tab');
+}
 </script>
 
 <?php

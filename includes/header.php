@@ -449,9 +449,13 @@ if (isset($_SESSION['user_id'])) {
                             <span>Enrollment Reports</span>
                         </a>
                     </li>
-                    <li class="menu-section">
-                        <span class="section-title">Communication</span>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>registrar/student_grade_history.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'student_grade_history.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-history"></i>
+                            <span>Grade History</span>
+                        </a>
                     </li>
+
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
                             <i class="fas fa-bullhorn"></i>

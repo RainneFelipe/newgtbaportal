@@ -111,21 +111,6 @@ ob_start();
             <a href="audit_logs.php" class="card-link">View Audit Logs</a>
         </div>
 
-        <!-- System Settings -->
-        <div class="dashboard-card">
-            <div class="card-icon">⚙️</div>
-            <h3 class="card-title">System Settings</h3>
-            <p class="card-description">Configure system-wide settings and preferences.</p>
-            <a href="settings.php" class="card-link">System Settings</a>
-        </div>
-
-        <!-- Reports -->
-        <div class="dashboard-card">
-            <div class="card-icon">📈</div>
-            <h3 class="card-title">Reports</h3>
-            <p class="card-description">Generate comprehensive reports on users, enrollment, and activities.</p>
-            <a href="reports.php" class="card-link">Generate Reports</a>
-        </div>
     </div>
 </div>
 
@@ -190,23 +175,7 @@ ob_start();
 </div>
 <?php endif; ?>
 
-<!-- Quick Actions -->
-<div class="quick-actions">
-    <h2 class="admin-section-title">Quick Actions</h2>
-    <div class="action-buttons">
-        <a href="users.php?action=create" class="btn btn-primary">
-            <span>➕</span> Create New User
-        </a>
-        <a href="students.php?action=create" class="btn btn-secondary">
-            <span>🎓</span> Add Student
-        </a>
-        <a href="teachers.php?action=create" class="btn btn-secondary">
-            <span>👨‍🏫</span> Add Teacher
-        </a>
-        <a href="school_years.php?action=create" class="btn btn-secondary">
-            <span>📅</span> New School Year
-        </a>
-    </div>
+
 </div>
 
 <style>

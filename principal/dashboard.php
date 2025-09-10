@@ -153,14 +153,6 @@ ob_start();
             <div class="stat-label">Available Subjects</div>
         </div>
         
-        <div class="stat-card secondary">
-            <div class="stat-header">
-                <h3>Class Schedules</h3>
-                <div class="stat-icon">📅</div>
-            </div>
-            <div class="stat-value"><?php echo number_format($total_schedules); ?></div>
-            <div class="stat-label">Active Schedules</div>
-        </div>
         
         <div class="stat-card accent">
             <div class="stat-header">
@@ -196,12 +188,8 @@ ob_start();
             <a href="subject_curriculum.php" class="card-link">Manage Curriculum</a>
         </div>
         
-        <div class="dashboard-card">
-            <div class="card-icon">👨‍🏫</div>
-            <h3 class="card-title">Teacher Assignments</h3>
-            <p class="card-description">Assign multiple teachers to sections and designate primary teachers for each class.</p>
-            <a href="teacher_assignments.php" class="card-link">Manage Assignments</a>
-        </div>
+
+
         
         <div class="dashboard-card">
             <div class="card-icon">📢</div>
@@ -210,12 +198,7 @@ ob_start();
             <a href="announcements.php" class="card-link">Manage Announcements</a>
         </div>
         
-        <div class="dashboard-card">
-            <div class="card-icon">📊</div>
-            <h3 class="card-title">Academic Reports</h3>
-            <p class="card-description">Generate academic reports, enrollment statistics, and performance analytics.</p>
-            <a href="reports.php" class="card-link">View Reports</a>
-        </div>
+
     </div>
 
     <!-- Recent Activity Section -->

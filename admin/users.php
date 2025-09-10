@@ -195,7 +195,6 @@ ob_start();
                 <label for="role">Role</label>
                 <select id="role" name="role" required>
                     <option value="">Select Role</option>
-                    <option value="student">Student</option>
                     <option value="teacher">Teacher</option>
                     <option value="admin">Administrator</option>
                     <option value="finance">Finance</option>

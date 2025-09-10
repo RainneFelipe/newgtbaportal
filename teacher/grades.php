@@ -38,15 +38,15 @@ try {
     $stmt->execute();
     $current_year = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    // Get sections where this teacher is assigned
+    // Get sections where this teacher is assigned (current school year only)
     $query = "SELECT sec.id, sec.section_name, gl.grade_name, sy.year_label,
-                     st.is_primary, gl.id as grade_level_id, gl.grade_order
+                     MAX(st.is_primary) as is_primary, gl.id as grade_level_id, gl.grade_order
               FROM section_teachers st
               LEFT JOIN sections sec ON st.section_id = sec.id
               LEFT JOIN grade_levels gl ON sec.grade_level_id = gl.id
               LEFT JOIN school_years sy ON sec.school_year_id = sy.id
-              WHERE st.teacher_id = :teacher_id AND st.is_active = 1
-              GROUP BY sec.id, st.is_primary, gl.grade_order
+              WHERE st.teacher_id = :teacher_id AND st.is_active = 1 AND sy.is_active = 1
+              GROUP BY sec.id, gl.grade_order
               ORDER BY gl.grade_order, sec.section_name";
     
     $stmt = $db->prepare($query);
@@ -55,16 +55,17 @@ try {
     
     $teacher_sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get all subjects available for teacher's assigned sections
+    // Get all subjects available for teacher's assigned grade levels (current school year only)
     $query = "SELECT DISTINCT s.id, s.subject_code, s.subject_name, c.grade_level_id,
-                     gl.grade_name, gl.grade_order, sec.id as section_id, sec.section_name
+                     gl.grade_name, gl.grade_order
               FROM section_teachers st
               LEFT JOIN sections sec ON st.section_id = sec.id
               LEFT JOIN grade_levels gl ON sec.grade_level_id = gl.id
-              LEFT JOIN curriculum c ON gl.id = c.grade_level_id
+              LEFT JOIN school_years sy ON sec.school_year_id = sy.id
+              LEFT JOIN curriculum c ON gl.id = c.grade_level_id AND c.school_year_id = sy.id
               LEFT JOIN subjects s ON c.subject_id = s.id
-              WHERE st.teacher_id = :teacher_id AND st.is_active = 1 AND s.is_active = 1
-              ORDER BY gl.grade_order, sec.section_name, s.subject_name";
+              WHERE st.teacher_id = :teacher_id AND st.is_active = 1 AND sy.is_active = 1 AND s.is_active = 1
+              ORDER BY gl.grade_order, s.subject_name";
     
     $stmt = $db->prepare($query);
     $stmt->bindParam(':teacher_id', $_SESSION['user_id']);
@@ -213,7 +214,6 @@ ob_start();
                                     data-grade-level="<?php echo $section['grade_level_id']; ?>"
                                     <?php echo ($selected_section_id == $section['id']) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($section['grade_name'] . ' - ' . $section['section_name']); ?>
-                                <?php echo $section['is_primary'] ? ' (Adviser)' : ''; ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -224,10 +224,10 @@ ob_start();
                     <select name="subject_id" id="subject_id" class="form-control" required>
                         <option value="">Choose a subject...</option>
                         <?php 
-                        // Group subjects by section for dynamic filtering
+                        // Group subjects by grade level for dynamic filtering
                         foreach ($teacher_subjects as $subject): ?>
                             <option value="<?php echo $subject['id']; ?>" 
-                                    data-section-id="<?php echo $subject['section_id']; ?>"
+                                    data-grade-level-id="<?php echo $subject['grade_level_id']; ?>"
                                     <?php echo ($selected_subject_id == $subject['id']) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($subject['subject_code'] . ' - ' . $subject['subject_name']); ?>
                             </option>
@@ -751,51 +751,69 @@ document.addEventListener('DOMContentLoaded', function() {
     const sectionSelect = document.getElementById('section_id');
     const subjectSelect = document.getElementById('subject_id');
     
+    console.log('DOM loaded, elements found:', sectionSelect !== null, subjectSelect !== null);
+    
     if (sectionSelect && subjectSelect) {
         // Store all subject options for filtering
-        const allSubjectOptions = Array.from(subjectSelect.querySelectorAll('option[data-section-id]'));
+        const allSubjectOptions = Array.from(subjectSelect.querySelectorAll('option[data-grade-level-id]'));
+        console.log('Total subject options found:', allSubjectOptions.length);
+        
+        // Log all subjects and their grade levels
+        allSubjectOptions.forEach(option => {
+            console.log('Subject:', option.textContent, 'Grade Level ID:', option.getAttribute('data-grade-level-id'));
+        });
         
         sectionSelect.addEventListener('change', function() {
-            const selectedSectionId = this.value;
+            const selectedSectionOption = this.options[this.selectedIndex];
+            const selectedGradeLevelId = selectedSectionOption ? selectedSectionOption.getAttribute('data-grade-level') : '';
+            
+            console.log('Section changed to:', selectedSectionOption ? selectedSectionOption.textContent : 'none');
+            console.log('Selected Grade Level ID:', selectedGradeLevelId);
             
             // Clear current subject selection
             subjectSelect.value = '';
             
-            // Remove all data-section-id options first
-            allSubjectOptions.forEach(option => {
-                if (option.parentNode) {
-                    option.parentNode.removeChild(option);
-                }
-            });
+            // Remove all subject options except the default one
+            const defaultOption = subjectSelect.querySelector('option[value=""]');
+            subjectSelect.innerHTML = '';
+            if (defaultOption) {
+                subjectSelect.appendChild(defaultOption);
+            }
             
-            if (selectedSectionId) {
-                // Add back only subjects for the selected section
+            if (selectedGradeLevelId) {
+                // Add back only subjects for the selected grade level
+                let foundSubjects = 0;
                 allSubjectOptions.forEach(option => {
-                    if (option.getAttribute('data-section-id') === selectedSectionId) {
+                    const optionGradeLevelId = option.getAttribute('data-grade-level-id');
+                    console.log('Comparing:', optionGradeLevelId, '===', selectedGradeLevelId);
+                    if (optionGradeLevelId === selectedGradeLevelId) {
                         subjectSelect.appendChild(option.cloneNode(true));
+                        foundSubjects++;
+                        console.log('Added subject:', option.textContent);
                     }
                 });
+                
+                console.log('Total subjects added:', foundSubjects);
                 
                 // Enable subject select
                 subjectSelect.disabled = false;
             } else {
-                // If no section selected, add all subjects back
-                allSubjectOptions.forEach(option => {
-                    subjectSelect.appendChild(option.cloneNode(true));
-                });
-                
-                // Disable subject select until section is chosen
+                // If no section selected, disable subject select
                 subjectSelect.disabled = true;
             }
         });
         
         // Initialize on page load
         if (sectionSelect.value) {
+            console.log('Triggering change on page load for section:', sectionSelect.value);
             sectionSelect.dispatchEvent(new Event('change'));
         } else {
             // Initially disable subject select if no section is selected
             subjectSelect.disabled = true;
         }
+    }
+    else {
+        console.error('Could not find section or subject select elements');
     }
     
     // Auto-calculate remarks based on grade
