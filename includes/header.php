@@ -500,6 +500,12 @@ if (isset($_SESSION['user_id'])) {
                             <span>View All Announcements</span>
                         </a>
                     </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/archive.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'archive.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-eye"></i>
+                            <span>Archived Class Info</span>
+                        </a>
+                    </li>
                 <?php endif; ?>
             </ul>
         </nav>
