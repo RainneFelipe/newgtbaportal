@@ -133,6 +133,23 @@ $base_url = '../';
 ob_start();
 ?>
 
+<!-- Print Header - Only visible when printing -->
+<div class="print-header">
+    <h1>GOLDEN TREASURE BAPTIST ACADEMY</h1>
+    <h2>STUDENT GRADE HISTORY REPORT</h2>
+    <p>An Academic Report of Past Performance</p>
+    <p>Generated on: <?= date('F d, Y') ?> at <?= date('g:i A') ?></p>
+</div>
+
+<!-- Print Student Info - Only visible when printing -->
+<div class="print-student-info">
+    <h3>STUDENT INFORMATION</h3>
+    <p><strong>Student ID:</strong> <?= htmlspecialchars($student['student_id'] ?? 'N/A') ?></p>
+    <p><strong>Name:</strong> <?= htmlspecialchars(trim(($student['first_name'] ?? '') . ' ' . ($student['middle_name'] ?? '') . ' ' . ($student['last_name'] ?? ''))) ?></p>
+    <p><strong>LRN:</strong> <?= htmlspecialchars($student['lrn'] ?? 'N/A') ?></p>
+    <p><strong>Username:</strong> <?= htmlspecialchars($student['username'] ?? 'N/A') ?></p>
+</div>
+
 <div class="welcome-section">
     <h1 class="welcome-title">📚 Grade History</h1>
     <p class="welcome-subtitle">View your academic performance from previous school years</p>
@@ -227,8 +244,8 @@ ob_start();
         ?>
         
         <?php if (!empty($year_grades)): ?>
-            <div style="background: var(--white); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
-                <div style="margin-bottom: 1.5rem;">
+            <div class="grade-year-section" style="background: var(--white); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+                <div class="year-header" style="margin-bottom: 1.5rem;">
                     <h3 style="color: var(--dark-blue); margin-bottom: 0.5rem;">📊 Academic Performance</h3>
                     <p style="color: var(--gray); margin: 0;">
                         School Year: <strong><?= htmlspecialchars($year['year_label']) ?></strong>
@@ -242,9 +259,8 @@ ob_start();
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: var(--light-blue); border-bottom: 2px solid var(--primary-blue);">
-                                <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Subject Code</th>
+                                <th style="padding: 1rem; text-align: center; color: var(--black); font-weight: 600;">Subject Code</th>
                                 <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Subject Name</th>
-                                <th style="padding: 1rem; text-align: center; color: var(--black); font-weight: 600;">Required</th>
                                 <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Teacher</th>
                                 <th style="padding: 1rem; text-align: center; color: var(--black); font-weight: 600;">Final Grade</th>
                                 <th style="padding: 1rem; text-align: center; color: var(--black); font-weight: 600;">Remarks</th>
@@ -253,7 +269,7 @@ ob_start();
                         <tbody>
                             <?php foreach ($year_grades as $grade): ?>
                                 <tr style="border-bottom: 1px solid var(--border-gray);">
-                                    <td style="padding: 1rem; color: var(--black); font-weight: 500;">
+                                    <td style="padding: 1rem; color: var(--black); font-weight: 500; text-align: center;">
                                         <?= htmlspecialchars($grade['subject_code']) ?>
                                         <?php if ($grade['is_required']): ?>
                                             <span style="color: var(--danger); font-size: 0.8rem; margin-left: 0.5rem;">*</span>
@@ -261,13 +277,6 @@ ob_start();
                                     </td>
                                     <td style="padding: 1rem; color: var(--black);">
                                         <?= htmlspecialchars($grade['subject_name']) ?>
-                                    </td>
-                                    <td style="padding: 1rem; text-align: center;">
-                                        <?php if ($grade['is_required']): ?>
-                                            <span style="color: var(--danger); font-weight: 600;">Required</span>
-                                        <?php else: ?>
-                                            <span style="color: var(--gray);">Elective</span>
-                                        <?php endif; ?>
                                     </td>
                                     <td style="padding: 1rem; color: var(--black);">
                                         <?php 
@@ -316,7 +325,7 @@ ob_start();
                 </div>
                 
                 <?php if ($graded_count > 0): ?>
-                    <div style="margin-top: 2rem; padding: 1.5rem; background: var(--light-blue); border-radius: 10px;">
+                    <div class="print-summary" style="margin-top: 2rem; padding: 1.5rem; background: var(--light-blue); border-radius: 10px;">
                         <h4 style="color: var(--dark-blue); margin-bottom: 0.5rem;">📈 Academic Summary</h4>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                             <div>
@@ -346,32 +355,243 @@ ob_start();
     <?php endforeach; ?>
     
     <div style="text-align: center; margin-top: 2rem;">
-        <button onclick="window.print()" style="padding: 0.75rem 1.5rem; background: var(--success); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;">
+        <button onclick="window.print()" class="print-btn">
             🖨️ Print Grade History
         </button>
+    </div>
+    
+    <!-- Print Footer - Only visible when printing -->
+    <div class="print-footer">
+        <p>© <?= date('Y') ?> Golden Treasure Baptist Academy. All rights reserved.</p>
+        <p>Student Portal System</p>
     </div>
 <?php endif; ?>
 
 <style>
+/* Screen styles */
+.print-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-blue);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.print-btn:hover {
+    background: var(--dark-blue);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(46, 134, 171, 0.3);
+}
+
+/* Print-specific styles */
 @media print {
-    .btn, .card-header, nav, .sidebar {
+    /* Hide non-essential elements */
+    .sidebar, 
+    .header, 
+    .main-wrapper nav,
+    .print-btn,
+    .welcome-section,
+    .sidebar-overlay,
+    .payment-reminders-banner,
+    button,
+    .btn {
         display: none !important;
     }
     
-    .card {
-        border: none !important;
-        box-shadow: none !important;
-    }
-    
-    .table {
-        font-size: 12px;
-    }
-    
-    body {
+    /* Reset page layout */
+    body, html {
         background: white !important;
+        color: black !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 12px !important;
+        line-height: 1.4 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+    }
+    
+    .container {
+        margin: 0 !important;
+        padding: 15px !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+    
+    /* Print header */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .print-header h1 {
+        font-size: 18px !important;
+        font-weight: bold !important;
+        margin: 0 0 5px 0 !important;
+        color: black !important;
+    }
+    
+    .print-header h2 {
+        font-size: 16px !important;
+        font-weight: bold !important;
+        margin: 0 0 10px 0 !important;
+        color: black !important;
+    }
+    
+    .print-header p {
+        font-size: 11px !important;
+        margin: 2px 0 !important;
+        color: black !important;
+    }
+    
+    /* Student info section */
+    .print-student-info {
+        display: block !important;
+        margin-bottom: 20px;
+        border: 1px solid #000;
+        padding: 10px;
+    }
+    
+    .print-student-info h3 {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        margin: 0 0 8px 0 !important;
+        color: black !important;
+    }
+    
+    .print-student-info p {
+        font-size: 11px !important;
+        margin: 3px 0 !important;
+        color: black !important;
+    }
+    
+    /* Grade table styling */
+    .grade-year-section {
+        page-break-inside: avoid;
+        margin-bottom: 25px;
+    }
+    
+    .year-header {
+        background: #f0f0f0 !important;
+        border: 1px solid #000 !important;
+        padding: 8px !important;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    
+    .year-header h3 {
+        font-size: 14px !important;
+        font-weight: bold !important;
+        margin: 0 !important;
+        color: black !important;
+    }
+    
+    /* Table styling */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 15px !important;
+        font-size: 10px !important;
+    }
+    
+    table th {
+        background: #e0e0e0 !important;
+        border: 1px solid #000 !important;
+        padding: 6px 4px !important;
+        font-weight: bold !important;
+        font-size: 10px !important;
+        text-align: center !important;
+        color: black !important;
+    }
+    
+    table td {
+        border: 1px solid #000 !important;
+        padding: 6px 4px !important;
+        font-size: 10px !important;
+        color: black !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+    }
+    
+    table td:nth-child(2) {
+        text-align: left !important;
+    }
+    
+    table td:nth-child(3) {
+        text-align: left !important;
+    }
+    
+    /* Summary section */
+    .print-summary {
+        border: 1px solid #000 !important;
+        padding: 10px !important;
+        margin-top: 15px !important;
+        background: #f8f8f8 !important;
+    }
+    
+    .print-summary h4 {
+        font-size: 12px !important;
+        font-weight: bold !important;
+        margin: 0 0 8px 0 !important;
+        color: black !important;
+    }
+    
+    .print-summary p {
+        font-size: 10px !important;
+        margin: 3px 0 !important;
+        color: black !important;
+    }
+    
+    /* Page break controls */
+    .page-break-before {
+        page-break-before: always;
+    }
+    
+    .page-break-after {
+        page-break-after: always;
+    }
+    
+    /* Footer */
+    .print-footer {
+        display: block !important;
+        position: fixed;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 9px !important;
+        color: #666 !important;
+        border-top: 1px solid #ccc;
+        padding-top: 5px;
+    }
+    
+    /* Hide screen-only elements */
+    [style*="background: var(--white)"],
+    [style*="background: var(--light-blue)"],
+    [style*="box-shadow"],
+    [style*="border-radius"] {
+        background: white !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
     }
 }
 
+/* Regular styles for screen */
 .card {
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     border: 1px solid rgba(0, 0, 0, 0.125);
@@ -393,6 +613,19 @@ ob_start();
 
 .table td {
     vertical-align: middle;
+}
+
+/* Print header - hidden on screen */
+.print-header {
+    display: none;
+}
+
+.print-student-info {
+    display: none;
+}
+
+.print-footer {
+    display: none;
 }
 </style>
 
