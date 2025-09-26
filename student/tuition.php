@@ -9,7 +9,7 @@ if (!checkRole('student')) {
 
 require_once '../config/database.php';
 
-$page_title = 'Tuition & Fees - GTBA Portal';
+$page_title = 'Tuition & Other Fees - GTBA Portal';
 $base_url = '../';
 
 try {
@@ -59,7 +59,7 @@ ob_start();
 ?>
 
 <div class="welcome-section">
-    <h1 class="welcome-title">Tuition & Fees</h1>
+    <h1 class="welcome-title">Tuition & Other Fees</h1>
     <p class="welcome-subtitle">View your tuition fees and payment information</p>
 </div>
 

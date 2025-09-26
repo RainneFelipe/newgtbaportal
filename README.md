@@ -9,7 +9,7 @@ A comprehensive PHP-based student portal system for Golden Treasure Baptist Acad
 - ✅ **Dashboard** - Overview of student information and quick access to features
 - ✅ **View Grades** - Final grades display with GWA calculation
 - ✅ **Class Schedule** - Weekly schedule with teacher and room information
-- ✅ **Tuition & Fees** - Fee breakdown and payment methods display
+- ✅ **Tuition & Other Fees** - Fee breakdown and payment methods display
 - ✅ **Section Information** - View section details and classmates
 - 🔄 **Announcements** - School announcements (coming soon)
 - 🔄 **Profile Management** - Update personal information (coming soon)

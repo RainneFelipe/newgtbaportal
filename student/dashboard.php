@@ -120,7 +120,7 @@ ob_start();
     
     <div class="dashboard-card">
         <div class="card-icon">💰</div>
-        <h3 class="card-title">Tuition & Fees</h3>
+        <h3 class="card-title">Tuition & Other Fees</h3>
         <p class="card-description">Check tuition fees and available payment methods.</p>
         <a href="tuition.php" class="card-link">View Tuition</a>
     </div>

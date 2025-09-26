@@ -270,7 +270,7 @@ if (isset($_SESSION['user_id'])) {
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>student/tuition.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'tuition.php') ? 'active' : ''; ?>">
                             <i class="fas fa-money-bill-wave"></i>
-                            <span>Tuition & Fees</span>
+                            <span>Tuition & Other Fees</span>
                         </a>
                     </li>
                     <li class="menu-item">
