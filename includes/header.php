@@ -471,25 +471,31 @@ if (isset($_SESSION['user_id'])) {
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>principal/sections.php" class="menu-link">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/sections.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'sections.php') ? 'active' : ''; ?>">
                             <i class="fas fa-layer-group"></i>
                             <span>Section Management</span>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>principal/schedules.php" class="menu-link">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/schedules.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'schedules.php') ? 'active' : ''; ?>">
                             <i class="fas fa-calendar-week"></i>
                             <span>Class Schedules</span>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>principal/subject_curriculum.php" class="menu-link">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/schedule_archive.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'schedule_archive.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-archive"></i>
+                            <span>Schedule Archive</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/subject_curriculum.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'subject_curriculum.php') ? 'active' : ''; ?>">
                             <i class="fas fa-book-open"></i>
                             <span>Curriculum & Subjects</span>
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>principal/announcements.php" class="menu-link">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
                             <i class="fas fa-bullhorn"></i>
                             <span>Manage Announcements</span>
                         </a>

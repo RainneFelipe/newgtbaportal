@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Sep 05, 2025 at 07:37 AM
+-- Generation Time: Sep 26, 2025 at 07:04 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -1093,22 +1093,22 @@ INSERT INTO `sections` (`id`, `section_name`, `grade_level_id`, `school_year_id`
 -- (See below for the actual view)
 --
 CREATE TABLE `section_assignments` (
-`assigned_date` date
-,`assignment_active` tinyint(1)
-,`current_enrollment` int
-,`first_name` varchar(100)
-,`grade_code` varchar(10)
-,`grade_level_id` int
-,`grade_name` varchar(50)
-,`is_primary` tinyint(1)
-,`last_name` varchar(100)
-,`school_year_id` int
-,`section_active` tinyint(1)
-,`section_id` int
+`section_id` int
 ,`section_name` varchar(100)
+,`grade_level_id` int
+,`school_year_id` int
+,`current_enrollment` int
+,`section_active` tinyint(1)
+,`grade_name` varchar(50)
+,`grade_code` varchar(10)
+,`year_label` varchar(20)
 ,`teacher_id` int
 ,`teacher_name` varchar(302)
-,`year_label` varchar(20)
+,`first_name` varchar(100)
+,`last_name` varchar(100)
+,`is_primary` tinyint(1)
+,`assigned_date` date
+,`assignment_active` tinyint(1)
 );
 
 -- --------------------------------------------------------
@@ -2036,53 +2036,53 @@ INSERT INTO `student_grades` (`id`, `student_id`, `subject_id`, `school_year_id`
 (1190, 461, 57, 2, 93.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1191, 461, 58, 2, 89.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1192, 461, 59, 2, 80.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1193, 461, 60, 2, 96.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1193, 461, 60, 2, 96.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1194, 462, 56, 2, 93.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1195, 462, 57, 2, 89.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1196, 462, 58, 2, 80.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1197, 462, 59, 2, 96.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1198, 462, 60, 2, 87.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1198, 462, 60, 2, 87.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1199, 463, 56, 2, 89.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1200, 463, 57, 2, 80.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1201, 463, 58, 2, 96.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1202, 463, 59, 2, 87.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1203, 463, 60, 2, 98.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1203, 463, 60, 2, 98.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1204, 464, 56, 2, 80.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1205, 464, 57, 2, 96.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1206, 464, 58, 2, 87.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1207, 464, 59, 2, 98.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1208, 464, 60, 2, 94.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1208, 464, 60, 2, 94.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1209, 465, 56, 2, 96.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1210, 465, 57, 2, 87.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1211, 465, 58, 2, 98.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1212, 465, 59, 2, 94.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1213, 465, 60, 2, 75.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1213, 465, 60, 2, 75.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1214, 466, 56, 2, 87.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1215, 466, 57, 2, 98.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1216, 466, 58, 2, 94.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1217, 466, 59, 2, 75.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1218, 466, 60, 2, 91.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1218, 466, 60, 2, 91.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1219, 467, 56, 2, 98.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1220, 467, 57, 2, 94.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1221, 467, 58, 2, 75.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1222, 467, 59, 2, 91.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1223, 467, 60, 2, 97.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1223, 467, 60, 2, 97.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1224, 468, 56, 2, 94.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1225, 468, 57, 2, 75.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1226, 468, 58, 2, 91.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1);
 INSERT INTO `student_grades` (`id`, `student_id`, `subject_id`, `school_year_id`, `final_grade`, `remarks`, `teacher_comments`, `date_recorded`, `recorded_by`, `created_at`, `updated_at`, `teacher_id`) VALUES
 (1227, 468, 59, 2, 97.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1228, 468, 60, 2, 83.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1228, 468, 60, 2, 83.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1229, 469, 56, 2, 75.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1230, 469, 57, 2, 91.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1231, 469, 58, 2, 97.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1232, 469, 59, 2, 83.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1233, 469, 60, 2, 99.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1233, 469, 60, 2, 99.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1234, 470, 56, 2, 91.00, 'Passed', 'Shows good progress and effort. Continue practicing key concepts.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1235, 470, 57, 2, 97.00, 'Passed', 'Demonstrates solid understanding. Well done on consistent performance.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1236, 470, 58, 2, 83.00, 'Passed', 'Good improvement throughout the term. Keep working hard!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
 (1237, 470, 59, 2, 99.00, 'Passed', 'Outstanding achievement! Shows mastery of all learning objectives.', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
-(1238, 470, 60, 2, 90.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 1, '2025-09-05 06:01:02', '2025-09-05 06:01:02', 1),
+(1238, 470, 60, 2, 90.00, 'Passed', 'Excellent participation and understanding. Keep up the great work!', '2025-09-05', 11, '2025-09-05 06:01:02', '2025-09-10 07:20:12', 1),
 (1662, 381, 11, 1, 87.50, 'Passed', 'Good understanding of basic math concepts', '2025-05-15', 1, '2025-09-05 06:44:34', '2025-09-05 06:44:34', 1),
 (1663, 381, 12, 1, 91.25, 'Passed', 'Excellent reading comprehension and writing skills', '2025-05-15', 1, '2025-09-05 06:44:34', '2025-09-05 06:44:34', 1),
 (1664, 381, 13, 1, 87.25, 'Passed', 'Good progress in Filipino language skills', '2025-05-15', 1, '2025-09-05 06:44:34', '2025-09-05 06:44:34', 1),
@@ -2133,7 +2133,8 @@ INSERT INTO `student_grades` (`id`, `student_id`, `subject_id`, `school_year_id`
 (1709, 390, 13, 1, 90.50, 'Passed', 'Excellent Filipino language skills and expression', '2025-05-15', 1, '2025-09-05 06:46:39', '2025-09-05 06:46:39', 1),
 (1710, 390, 14, 1, 92.25, 'Passed', 'Shows excellent scientific observation skills', '2025-05-15', 1, '2025-09-05 06:46:39', '2025-09-05 06:46:39', 1),
 (1711, 390, 15, 1, 95.00, 'Passed', 'Exceptional talent in arts and music', '2025-05-15', 1, '2025-09-05 06:46:39', '2025-09-05 06:46:39', 1),
-(1712, 390, 3, 4, 85.00, 'Passed', 'Excellent participation in science exploration activities. Shows great curiosity about the natural world.', '2024-06-15', 1, '2025-09-05 07:24:56', '2025-09-05 07:24:56', 1);
+(1712, 390, 3, 4, 85.00, 'Passed', 'Excellent participation in science exploration activities. Shows great curiosity about the natural world.', '2024-06-15', 1, '2025-09-05 07:24:56', '2025-09-05 07:24:56', 1),
+(1713, 381, 3, 4, 85.00, 'Passed', 'Shows good understanding of basic science concepts.', '2024-05-15', 1, '2025-09-10 07:34:25', '2025-09-10 07:39:39', 1);
 
 -- --------------------------------------------------------
 
@@ -2556,7 +2557,7 @@ CREATE TABLE `student_payments` (
 
 INSERT INTO `student_payments` (`id`, `student_id`, `payment_term_id`, `payment_type`, `installment_number`, `amount_paid`, `payment_date`, `payment_method`, `reference_number`, `proof_image`, `proof_notes`, `verification_status`, `verified_by`, `verification_date`, `verification_notes`, `submitted_at`, `updated_at`) VALUES
 (8, 241, 31, 'down_payment', NULL, 7260.00, '2025-08-17', 'gcash', '33233333', 'uploads/payment_proofs/payment_241_1755521836_68a3232c46590.jpeg', '', 'verified', 2, '2025-08-18 20:57:57', '', '2025-08-18 12:57:16', '2025-08-18 12:57:57'),
-(9, 390, 36, 'full_payment', NULL, 9999.00, '2025-09-01', 'gcash', 'sdfsdf', 'uploads/payment_proofs/payment_390_1757053709_68ba830d5df5f.png', '', 'pending', NULL, NULL, NULL, '2025-09-05 06:28:29', '2025-09-05 06:28:29');
+(9, 390, 36, 'full_payment', NULL, 9999.00, '2025-09-01', 'gcash', 'sdfsdf', 'uploads/payment_proofs/payment_390_1757053709_68ba830d5df5f.png', '', 'verified', 2, '2025-09-17 16:25:18', '', '2025-09-05 06:28:29', '2025-09-17 08:25:18');
 
 -- --------------------------------------------------------
 
@@ -2716,24 +2717,24 @@ INSERT INTO `teachers` (`id`, `user_id`, `employee_id`, `first_name`, `last_name
 -- (See below for the actual view)
 --
 CREATE TABLE `teacher_info` (
-`contact_number` varchar(20)
-,`date_hired` date
-,`date_of_birth` date
+`user_id` int
+,`username` varchar(50)
 ,`email` varchar(100)
-,`email_address` varchar(100)
+,`user_active` tinyint(1)
+,`teacher_table_id` int
 ,`employee_id` varchar(20)
-,`employment_status` enum('Regular','Contractual','Part-time')
 ,`first_name` varchar(100)
-,`full_name` varchar(302)
-,`gender` enum('Male','Female')
 ,`last_name` varchar(100)
 ,`middle_name` varchar(100)
+,`full_name` varchar(302)
+,`gender` enum('Male','Female')
+,`date_of_birth` date
+,`contact_number` varchar(20)
+,`email_address` varchar(100)
 ,`specialization` varchar(200)
+,`employment_status` enum('Regular','Contractual','Part-time')
+,`date_hired` date
 ,`teacher_active` tinyint(1)
-,`teacher_table_id` int
-,`user_active` tinyint(1)
-,`user_id` int
-,`username` varchar(50)
 );
 
 -- --------------------------------------------------------
@@ -3269,7 +3270,7 @@ ALTER TABLE `student_enrollments`
 -- AUTO_INCREMENT for table `student_grades`
 --
 ALTER TABLE `student_grades`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1713;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1714;
 
 --
 -- AUTO_INCREMENT for table `student_guardians`
