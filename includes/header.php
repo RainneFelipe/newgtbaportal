@@ -317,6 +317,14 @@ if (isset($_SESSION['user_id'])) {
                             <span>Manage Grades</span>
                         </a>
                     </li>
+
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>teacher/schedule.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'schedule.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-calendar-week"></i>
+                            <span>My Schedule</span>
+                        </a>
+                    </li>
+
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>shared/announcements.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'announcements.php') ? 'active' : ''; ?>">
                             <i class="fas fa-bullhorn"></i>
@@ -480,6 +488,12 @@ if (isset($_SESSION['user_id'])) {
                         <a href="<?php echo $base_url ?? '../'; ?>principal/schedules.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'schedules.php') ? 'active' : ''; ?>">
                             <i class="fas fa-calendar-week"></i>
                             <span>Class Schedules</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>principal/teacher_schedules.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'teacher_schedules.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-user-clock"></i>
+                            <span>Teacher Schedules</span>
                         </a>
                     </li>
                     <li class="menu-item">

@@ -56,7 +56,6 @@ try {
     
     // Get students for selected section or first section
     $students = [];
-    $section_schedule = [];
     $section_subjects = [];
     $selected_section = null;
     
@@ -85,34 +84,7 @@ try {
         
         $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Get schedule for the selected section
-        $query = "SELECT cs.*, s.subject_name, s.subject_code, cs.activity_name
-                  FROM class_schedules cs
-                  LEFT JOIN subjects s ON cs.subject_id = s.id
-                  WHERE cs.section_id = :section_id AND cs.is_active = 1
-                  ORDER BY 
-                    CASE cs.day_of_week 
-                        WHEN 'Monday' THEN 1
-                        WHEN 'Tuesday' THEN 2
-                        WHEN 'Wednesday' THEN 3
-                        WHEN 'Thursday' THEN 4
-                        WHEN 'Friday' THEN 5
-                        WHEN 'Saturday' THEN 6
-                    END,
-                    cs.start_time";
-        
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':section_id', $selected_section_id);
-        $stmt->execute();
-        
-        $all_schedule = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Group schedule by day
-        foreach ($all_schedule as $schedule) {
-            $section_schedule[$schedule['day_of_week']][] = $schedule;
-        }
-        
-        // Get subjects for this section
+ // Get subjects for this section
         $query = "SELECT DISTINCT s.id as subject_id, s.subject_name, s.subject_code, 
                          t.first_name, t.last_name, cs.teacher_id
                   FROM class_schedules cs
@@ -126,6 +98,8 @@ try {
         $stmt->execute();
         
         $section_subjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+
     }
     
 } catch (Exception $e) {
@@ -133,7 +107,7 @@ try {
     error_log("Teacher sections error: " . $e->getMessage());
 }
 
-$days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 
 ob_start();
 ?>
@@ -222,7 +196,6 @@ ob_start();
     <!-- Section Navigation Tabs -->
     <div class="tab-navigation">
         <button class="tab-btn active" data-tab="students">Students</button>
-        <button class="tab-btn" data-tab="schedule">Schedule</button>
         <button class="tab-btn" data-tab="subjects">Subjects</button>
     </div>
     
@@ -279,46 +252,6 @@ ob_start();
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-            </div>
-        <?php endif; ?>
-    </div>
-    
-    <!-- Schedule Tab -->
-    <div class="tab-content" id="schedule-tab">
-        <?php if (empty($section_schedule)): ?>
-            <div class="empty-state">
-                <div class="empty-icon">📅</div>
-                <h3>No schedule available</h3>
-                <p>This section doesn't have a schedule set up yet.</p>
-            </div>
-        <?php else: ?>
-            <div class="schedule-grid">
-                <?php foreach ($days_order as $day): ?>
-                    <?php if (isset($section_schedule[$day])): ?>
-                        <div class="day-schedule">
-                            <h4 class="day-title"><?php echo $day; ?></h4>
-                            <div class="day-classes">
-                                <?php foreach ($section_schedule[$day] as $class): ?>
-                                    <div class="class-item <?php echo $class['teacher_id'] == $_SESSION['user_id'] ? 'my-class' : ''; ?>">
-                                        <div class="class-time">
-                                            <?php echo date('g:i A', strtotime($class['start_time'])); ?> - 
-                                            <?php echo date('g:i A', strtotime($class['end_time'])); ?>
-                                        </div>
-                                        <div class="class-subject">
-                                            <?php echo $class['activity_name'] ? htmlspecialchars($class['activity_name']) : htmlspecialchars($class['subject_name']); ?>
-                                        </div>
-                                        <?php if ($class['room']): ?>
-                                            <div class="class-room">Room: <?php echo htmlspecialchars($class['room']); ?></div>
-                                        <?php endif; ?>
-                                        <?php if ($class['teacher_id'] == $_SESSION['user_id']): ?>
-                                            <div class="my-class-indicator">Your Class</div>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </div>
@@ -571,68 +504,7 @@ ob_start();
     color: #166534;
 }
 
-.schedule-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-}
 
-.day-schedule {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.day-title {
-    background: #3b82f6;
-    color: white;
-    padding: 0.75rem;
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    text-align: center;
-}
-
-.day-classes {
-    padding: 0.5rem;
-}
-
-.class-item {
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    background: white;
-}
-
-.class-item.my-class {
-    border-color: #10b981;
-    background: #f0fdf4;
-}
-
-.class-time {
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 0.9rem;
-}
-
-.class-subject {
-    font-weight: 500;
-    color: #3b82f6;
-    margin: 0.25rem 0;
-}
-
-.class-room {
-    font-size: 0.8rem;
-    color: #6b7280;
-}
-
-.my-class-indicator {
-    font-size: 0.75rem;
-    color: #10b981;
-    font-weight: 500;
-    margin-top: 0.25rem;
-}
 
 .subjects-grid {
     display: grid;
@@ -783,9 +655,7 @@ ob_start();
         grid-template-columns: 1fr;
     }
     
-    .schedule-grid {
-        grid-template-columns: 1fr;
-    }
+
     
     .card-header {
         flex-direction: column;
