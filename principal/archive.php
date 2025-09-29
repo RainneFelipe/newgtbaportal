@@ -49,6 +49,52 @@ try {
         $classes = $classQuery->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Handle AJAX schedule request
+    if (isset($_GET['ajax_schedule']) && isset($_GET['section_id']) && isset($_GET['school_year_id'])) {
+        $sectionId = (int)$_GET['section_id'];
+        $schoolYearId = (int)$_GET['school_year_id'];
+        // Example query, adjust columns/table as needed
+        $schedStmt = $db->prepare("
+            SELECT 
+                sc.day,
+                sc.start_time,
+                sc.end_time,
+                subj.subject_code,
+                subj.subject_name,
+                t.first_name,
+                t.last_name
+            FROM schedules sc
+            INNER JOIN subjects subj ON sc.subject_id = subj.id
+            LEFT JOIN teachers t ON sc.teacher_id = t.id
+            WHERE sc.section_id = ? AND sc.school_year_id = ?
+            ORDER BY FIELD(sc.day, 'Monday','Tuesday','Wednesday','Thursday','Friday'), sc.start_time
+        ");
+        $schedStmt->execute([$sectionId, $schoolYearId]);
+        $schedules = $schedStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($schedules) {
+            echo '<table class="table table-bordered table-sm mb-0">';
+            echo '<thead><tr>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                  </tr></thead><tbody>';
+            foreach ($schedules as $sched) {
+                echo '<tr>
+                        <td>' . htmlspecialchars($sched['day']) . '</td>
+                        <td>' . htmlspecialchars(substr($sched['start_time'],0,5)) . ' - ' . htmlspecialchars(substr($sched['end_time'],0,5)) . '</td>
+                        <td>' . htmlspecialchars($sched['subject_code']) . ' - ' . htmlspecialchars($sched['subject_name']) . '</td>
+                        <td>' . htmlspecialchars($sched['first_name'] . ' ' . $sched['last_name']) . '</td>
+                      </tr>';
+            }
+            echo '</tbody></table>';
+        } else {
+            echo '<div class="text-center text-muted py-4">No schedule found for this class.</div>';
+        }
+        exit;
+    }
+
 } catch (PDOException $e) {
     $error = "Database error: " . $e->getMessage();
 }
@@ -56,38 +102,42 @@ try {
 include '../includes/header.php';
 ?>
 
-<div class="container-fluid p-4">
+<div class="container-xl py-4">
     <div class="row">
         <div class="col">
-            <h1 class="mb-1">Academic Archives</h1>
-            <p class="text-muted mb-4">Historical view of class records from previous years</p>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 class="fw-bold mb-0 text-primary">Academic Archives</h2>
+                    <p class="text-muted mb-0">Historical view of class records from previous years</p>
+                </div>
+                <?php if (!empty($classes)): ?>
+                <button type="button" onclick="window.print()" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-print me-2"></i> Print Report
+                </button>
+                <?php endif; ?>
+            </div>
 
             <?php if (isset($error)): ?>
                 <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
             <?php if (!empty($schoolYears)): ?>
-                <form method="get" class="mb-4">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-4">
-                            <label for="yearSelect" class="form-label">Select Academic Year</label>
-                            <select id="yearSelect" name="year" class="form-select" onchange="this.form.submit()">
-                                <?php foreach ($schoolYears as $year): ?>
-                                    <option value="<?= $year['id'] ?>" <?= ($selectedYear == $year['id']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($year['year_label']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <?php if (!empty($classes)): ?>
-                        <div class="col-md-8 text-end">
-                            <button type="button" onclick="window.print()" class="btn btn-outline-primary">
-                                <i class="fas fa-print me-2"></i> Print Report
-                            </button>
-                        </div>
-                        <?php endif; ?>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="get" class="row g-2 align-items-end">
+                            <div class="col-md-4">
+                                <label for="yearSelect" class="form-label fw-semibold">Select Academic Year</label>
+                                <select id="yearSelect" name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <?php foreach ($schoolYears as $year): ?>
+                                        <option value="<?= $year['id'] ?>" <?= ($selectedYear == $year['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($year['year_label']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
 
                 <div class="card">
                     <div class="card-header bg-white border-bottom">
@@ -95,7 +145,7 @@ include '../includes/header.php';
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped mb-0">
+                            <table class="table table-bordered table-striped align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th style="width: 15%;">Grade Level</th>
@@ -103,6 +153,7 @@ include '../includes/header.php';
                                         <th style="width: 20%;">Room</th>
                                         <th style="width: 15%;">Class Adviser</th>
                                         <th style="width: 10%;" class="text-center">Students</th>
+                                        <th style="width: 10%;" class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -118,11 +169,21 @@ include '../includes/header.php';
                                                         <?= $class['student_count'] ?>
                                                     </span>
                                                 </td>
+                                                <td class="text-center">
+                                                    <button 
+                                                        type="button" 
+                                                        class="btn btn-sm btn-outline-info view-sched-btn"
+                                                        data-section-id="<?= $class['id'] ?>"
+                                                        data-schoolyear-id="<?= $selectedYear ?>"
+                                                    >
+                                                        <i class="fas fa-calendar-alt me-1"></i> View Schedule
+                                                    </button>
+                                                </td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php else: ?>
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">
+                                            <td colspan="6" class="text-center text-muted py-4">
                                                 No class records available for the selected academic year.
                                             </td>
                                         </tr>
@@ -141,6 +202,43 @@ include '../includes/header.php';
         </div>
     </div>
 </div>
+
+<!-- Modal for schedule -->
+<div class="modal fade" id="scheduleModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="scheduleModalLabel">Class Schedule</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="scheduleModalBody">
+        <div class="text-center text-muted py-4">Loading schedule...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.view-sched-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        const sectionId = this.getAttribute('data-section-id');
+        const schoolYearId = this.getAttribute('data-schoolyear-id');
+        const modalBody = document.getElementById('scheduleModalBody');
+        modalBody.innerHTML = '<div class="text-center text-muted py-4">Loading schedule...</div>';
+        var scheduleModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
+        scheduleModal.show();
+
+        fetch(`archive.php?ajax_schedule=1&section_id=${sectionId}&school_year_id=${schoolYearId}`)
+            .then(response => response.text())
+            .then(html => {
+                modalBody.innerHTML = html;
+            })
+            .catch(() => {
+                modalBody.innerHTML = '<div class="text-danger text-center py-4">Failed to load schedule.</div>';
+            });
+    });
+});
+</script>
 
 <style>
 .table thead th {
@@ -166,7 +264,7 @@ include '../includes/header.php';
     box-shadow: 0 2px 8px rgba(44,62,80,0.04);
 }
 @media print {
-    .btn, select, label, .card-header {
+    .btn, select, label, .card-header, .modal {
         display: none !important;
     }
     .card {

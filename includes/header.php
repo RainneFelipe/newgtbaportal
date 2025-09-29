@@ -502,7 +502,7 @@ if (isset($_SESSION['user_id'])) {
                     </li>
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>principal/archive.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'archive.php') ? 'active' : ''; ?>">
-                            <i class="fas fa-eye"></i>
+                            <i class="fas fa-archive"></i>
                             <span>Archived Class Info</span>
                         </a>
                     </li>
