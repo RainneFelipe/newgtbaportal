@@ -37,14 +37,14 @@ try {
     exit();
 }
 
-// Get all school years where this student has grades (excluding current year)
+// Get all school years where this student has grades (including current year)
 try {
     $stmt = $pdo->prepare("
-        SELECT DISTINCT sy.id, sy.year_label, sy.start_date, sy.end_date
+        SELECT DISTINCT sy.id, sy.year_label, sy.start_date, sy.end_date, sy.is_current
         FROM student_grades sg
         JOIN school_years sy ON sg.school_year_id = sy.id
-        WHERE sg.student_id = ? AND sy.is_current = 0
-        ORDER BY sy.start_date DESC
+        WHERE sg.student_id = ?
+        ORDER BY sy.is_current DESC, sy.start_date DESC
     ");
     $stmt->execute([$student['id']]);
     $historical_years = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -152,7 +152,7 @@ ob_start();
 
 <div class="welcome-section">
     <h1 class="welcome-title">📚 Grade History</h1>
-    <p class="welcome-subtitle">View your academic performance from previous school years</p>
+    <p class="welcome-subtitle">View your academic performance for current and previous school years</p>
 </div>
 
 <?php if (isset($error_message)): ?>
@@ -165,18 +165,13 @@ ob_start();
 
 <?php if (empty($historical_years)): ?>
     <div style="padding: 2rem; background: var(--light-blue); border: 1px solid var(--primary-blue); border-radius: 10px; text-align: center;">
-        <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">📋 No Grade History Available</h3>
+        <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">📋 No Grades Available</h3>
         <p style="color: var(--black); margin-bottom: 1rem;">
-            You don't have any grades from previous school years yet.
+            You don't have any grades recorded yet.
         </p>
         <p style="color: var(--gray); margin: 0; font-size: 0.9rem;">
-            Your grade history will appear here once you complete a school year.
+            Your grades will appear here once your teachers input them.
         </p>
-        <div style="margin-top: 1.5rem;">
-            <a href="grades.php" style="display: inline-block; padding: 0.75rem 1.5rem; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                📊 View Current Grades
-            </a>
-        </div>
     </div>
 <?php else: ?>
     <?php foreach ($historical_years as $year): ?>
@@ -244,8 +239,13 @@ ob_start();
         ?>
         
         <?php if (!empty($year_grades)): ?>
-            <div class="grade-year-section" style="background: var(--white); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+            <div class="grade-year-section" style="background: var(--white); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08); <?= $year['is_current'] ? 'border: 3px solid var(--primary-blue);' : '' ?>">
                 <div class="year-header" style="margin-bottom: 1.5rem;">
+                    <?php if ($year['is_current']): ?>
+                        <div style="display: inline-block; background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%); color: white; padding: 0.5rem 1.5rem; border-radius: 50px; margin-bottom: 1rem; font-weight: 600; font-size: 0.9rem;">
+                            🌟 CURRENT SCHOOL YEAR
+                        </div>
+                    <?php endif; ?>
                     <h3 style="color: var(--dark-blue); margin-bottom: 0.5rem;">📊 Academic Performance</h3>
                     <p style="color: var(--gray); margin: 0;">
                         School Year: <strong><?= htmlspecialchars($year['year_label']) ?></strong>

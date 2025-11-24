@@ -250,15 +250,9 @@ if (isset($_SESSION['user_id'])) {
                         </a>
                     </li>
                     <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>student/grades.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'grades.php') ? 'active' : ''; ?>">
+                        <a href="<?php echo $base_url ?? '../'; ?>student/grade_history.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'grade_history.php') ? 'active' : ''; ?>">
                             <i class="fas fa-chart-line"></i>
                             <span>My Grades</span>
-                        </a>
-                    </li>
-                    <li class="menu-item">
-                        <a href="<?php echo $base_url ?? '../'; ?>student/grade_history.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'grade_history.php') ? 'active' : ''; ?>">
-                            <i class="fas fa-history"></i>
-                            <span>Grade History</span>
                         </a>
                     </li>
                     <li class="menu-item">
@@ -289,6 +283,12 @@ if (isset($_SESSION['user_id'])) {
                         <a href="<?php echo $base_url ?? '../'; ?>student/section.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'section.php') ? 'active' : ''; ?>">
                             <i class="fas fa-users"></i>
                             <span>My Section</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>student/submit_lrn.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'submit_lrn.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-id-card"></i>
+                            <span>Submit LRN</span>
                         </a>
                     </li>
                     <li class="menu-item">
@@ -461,6 +461,12 @@ if (isset($_SESSION['user_id'])) {
                         <a href="<?php echo $base_url ?? '../'; ?>registrar/student_grade_history.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'student_grade_history.php') ? 'active' : ''; ?>">
                             <i class="fas fa-history"></i>
                             <span>Grade History</span>
+                        </a>
+                    </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>registrar/school_years.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'school_years.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>School Years</span>
                         </a>
                     </li>
 

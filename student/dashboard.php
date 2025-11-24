@@ -56,6 +56,38 @@ ob_start();
     <p class="welcome-subtitle">Your GTBA Student Portal Dashboard</p>
 </div>
 
+<!-- LRN Submission Alert -->
+<?php if (isset($student_info) && empty($student_info['lrn'])): ?>
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); animation: pulse 2s infinite;">
+    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+        <div style="font-size: 3rem;">📝</div>
+        <div style="flex: 1; min-width: 250px;">
+            <h3 style="color: white; margin: 0 0 0.5rem 0; font-size: 1.3rem;">Action Required: Submit Your LRN</h3>
+            <p style="color: rgba(255,255,255,0.9); margin: 0; line-height: 1.5;">
+                Your Learner Reference Number (LRN) is required for your student records. 
+                Please submit your 12-digit LRN to complete your registration.
+            </p>
+        </div>
+        <div>
+            <a href="submit_lrn.php" style="display: inline-block; padding: 0.75rem 1.5rem; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease;">
+                <i class="fas fa-id-card"></i> Submit LRN Now
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        box-shadow: 0 5px 25px rgba(102, 126, 234, 0.5);
+    }
+}
+</style>
+<?php endif; ?>
+
 <!-- Recent Announcements -->
 <?php if (!empty($recent_announcements)): ?>
 <div class="recent-announcements-section">
@@ -99,20 +131,13 @@ ob_start();
 <div class="dashboard-grid">
     <div class="dashboard-card">
         <div class="card-icon">📊</div>
-        <h3 class="card-title">View Grades</h3>
-        <p class="card-description">Check your academic performance and final grades for all subjects.</p>
-        <a href="grades.php" class="card-link">View Grades</a>
+        <h3 class="card-title">My Grades</h3>
+        <p class="card-description">View your academic performance for current and previous school years.</p>
+        <a href="grade_history.php" class="card-link">View Grades</a>
     </div>
     
     <div class="dashboard-card">
-        <div class="card-icon">�</div>
-        <h3 class="card-title">Grade History</h3>
-        <p class="card-description">View your grades from previous school years and track your academic progress.</p>
-        <a href="grade_history.php" class="card-link">View History</a>
-    </div>
-    
-    <div class="dashboard-card">
-        <div class="card-icon">�📅</div>
+        <div class="card-icon">📅</div>
         <h3 class="card-title">Class Schedule</h3>
         <p class="card-description">View your weekly class schedule and room assignments.</p>
         <a href="schedule.php" class="card-link">View Schedule</a>

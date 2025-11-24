@@ -44,12 +44,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $full_payment_due_date = $_POST['full_payment_due_date'] ?: null;
                         $full_payment_discount_percentage = $_POST['full_payment_discount_percentage'] ?: 0;
                         
+                        // Fetch the tuition fee amount from tuition_fees table
+                        $full_payment_amount = null;
+                        if ($grade_level_id) {
+                            $tuition_query = "SELECT gtba_total_amount FROM tuition_fees 
+                                            WHERE grade_level_id = :grade_level_id 
+                                            AND school_year_id = :school_year_id 
+                                            AND is_active = 1 
+                                            LIMIT 1";
+                            $tuition_stmt = $db->prepare($tuition_query);
+                            $tuition_stmt->bindParam(':grade_level_id', $grade_level_id);
+                            $tuition_stmt->bindParam(':school_year_id', $school_year_id);
+                            $tuition_stmt->execute();
+                            $tuition_data = $tuition_stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($tuition_data) {
+                                $full_payment_amount = $tuition_data['gtba_total_amount'];
+                            }
+                        }
+                        
                         $query = "INSERT INTO payment_terms (term_name, term_type, school_year_id, grade_level_id, 
-                                 full_payment_due_date, full_payment_discount_percentage, description, is_default, created_by)
+                                 full_payment_amount, full_payment_due_date, full_payment_discount_percentage, description, is_default, created_by)
                                  VALUES (:term_name, :term_type, :school_year_id, :grade_level_id, 
-                                 :full_payment_due_date, :full_payment_discount_percentage, :description, :is_default, :created_by)";
+                                 :full_payment_amount, :full_payment_due_date, :full_payment_discount_percentage, :description, :is_default, :created_by)";
                         
                         $stmt = $db->prepare($query);
+                        $stmt->bindParam(':full_payment_amount', $full_payment_amount);
                         $stmt->bindParam(':full_payment_due_date', $full_payment_due_date);
                         $stmt->bindParam(':full_payment_discount_percentage', $full_payment_discount_percentage);
                     } else {
@@ -128,9 +147,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $full_payment_due_date = $_POST['full_payment_due_date'] ?: null;
                             $full_payment_discount_percentage = $_POST['full_payment_discount_percentage'] ?: 0;
                             
+                            // Fetch the tuition fee amount from tuition_fees table
+                            $full_payment_amount = null;
+                            if ($grade_level_id) {
+                                $tuition_query = "SELECT gtba_total_amount FROM tuition_fees 
+                                                WHERE grade_level_id = :grade_level_id 
+                                                AND school_year_id = :school_year_id 
+                                                AND is_active = 1 
+                                                LIMIT 1";
+                                $tuition_stmt = $db->prepare($tuition_query);
+                                $tuition_stmt->bindParam(':grade_level_id', $grade_level_id);
+                                $tuition_stmt->bindParam(':school_year_id', $school_year_id);
+                                $tuition_stmt->execute();
+                                $tuition_data = $tuition_stmt->fetch(PDO::FETCH_ASSOC);
+                                if ($tuition_data) {
+                                    $full_payment_amount = $tuition_data['gtba_total_amount'];
+                                }
+                            }
+                            
                             $query = "UPDATE payment_terms 
                                      SET term_name = :term_name, term_type = :term_type, school_year_id = :school_year_id, 
-                                         grade_level_id = :grade_level_id, full_payment_due_date = :full_payment_due_date,
+                                         grade_level_id = :grade_level_id, full_payment_amount = :full_payment_amount,
+                                         full_payment_due_date = :full_payment_due_date,
                                          full_payment_discount_percentage = :full_payment_discount_percentage,
                                          down_payment_amount = NULL, down_payment_due_date = NULL, monthly_fee_amount = NULL,
                                          installment_start_month = NULL, installment_start_year = NULL, 
@@ -139,6 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                      WHERE id = :id";
                             
                             $stmt = $db->prepare($query);
+                            $stmt->bindParam(':full_payment_amount', $full_payment_amount);
                             $stmt->bindParam(':full_payment_due_date', $full_payment_due_date);
                             $stmt->bindParam(':full_payment_discount_percentage', $full_payment_discount_percentage);
                         } else {

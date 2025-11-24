@@ -104,7 +104,7 @@ if ($_POST && isset($_POST['register_student'])) {
         $stmt->execute([
             $user_id,
             $_POST['student_id'],
-            $_POST['lrn'],
+            null, // LRN is now optional, set to NULL
             $_POST['student_type'],
             $_POST['first_name'],
             $_POST['last_name'],
@@ -202,12 +202,6 @@ include '../includes/header.php';
                             <label for="student_id" class="required">Student ID</label>
                             <input type="text" id="student_id" name="student_id" required maxlength="20">
                             <small>Unique school-generated ID</small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="lrn" class="required">LRN (Learners Reference Number)</label>
-                            <input type="text" id="lrn" name="lrn" required maxlength="12" pattern="[0-9]{12}">
-                            <small>12-digit number from DepEd</small>
                         </div>
                         
                         <div class="form-group">

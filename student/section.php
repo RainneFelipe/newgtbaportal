@@ -112,7 +112,7 @@ ob_start();
             <div style="background: var(--light-blue); padding: 1.5rem; border-radius: 10px;">
                 <h4 style="color: var(--dark-blue); margin-bottom: 1rem;">Section Stats</h4>
                 <p style="margin: 0.5rem 0; color: var(--black);">
-                    <strong>Current Enrollment:</strong> <?php echo $student_info['current_enrollment']; ?> students
+                    
                 </p>
                 <?php if ($student_info['room_number']): ?>
                 <p style="margin: 0.5rem 0; color: var(--black);">
@@ -189,7 +189,7 @@ ob_start();
                             <?php echo htmlspecialchars($classmate['first_name'] . ' ' . ($classmate['middle_name'] ? substr($classmate['middle_name'], 0, 1) . '. ' : '') . $classmate['last_name']); ?>
                         </div>
                         <div style="color: var(--gray); font-size: 0.9rem;">
-                            Student ID: <?php echo htmlspecialchars($classmate['student_id']); ?>
+                            
                         </div>
                     </div>
                 <?php endforeach; ?>

@@ -32,6 +32,13 @@ $student_info = $student_stmt->fetch(PDO::FETCH_ASSOC);
 if (!$student_info) {
     $error_message = "Student information not found.";
 } else {
+    // Get student's payment preference
+    $preference_query = "SELECT payment_term_id FROM student_payment_preferences WHERE student_id = :student_id LIMIT 1";
+    $preference_stmt = $db->prepare($preference_query);
+    $preference_stmt->bindParam(':student_id', $student_info['id']);
+    $preference_stmt->execute();
+    $preferred_term_id = $preference_stmt->fetchColumn();
+    
     // Get applicable payment terms
     $terms_query = "SELECT pt.* 
                     FROM payment_terms pt 
@@ -55,6 +62,62 @@ if (!$student_info) {
     $payments_stmt->bindParam(':student_id', $student_info['id']);
     $payments_stmt->execute();
     $existing_payments = $payments_stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Calculate remaining balance for preferred payment term if it's an installment
+    $balance_info = null;
+    if ($preferred_term_id) {
+        // Get the preferred payment term details
+        $preferred_term_query = "SELECT * FROM payment_terms WHERE id = :term_id";
+        $preferred_term_stmt = $db->prepare($preferred_term_query);
+        $preferred_term_stmt->bindParam(':term_id', $preferred_term_id);
+        $preferred_term_stmt->execute();
+        $preferred_term = $preferred_term_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($preferred_term && $preferred_term['term_type'] === 'installment') {
+            // Calculate total amount owed
+            $total_amount = $preferred_term['down_payment_amount'] + ($preferred_term['monthly_fee_amount'] * $preferred_term['number_of_installments']);
+            
+            // Get all verified payments for this payment term
+            $paid_query = "SELECT COALESCE(SUM(amount_paid), 0) as total_paid
+                           FROM student_payments
+                           WHERE student_id = :student_id
+                           AND payment_term_id = :payment_term_id
+                           AND verification_status = 'verified'";
+            $paid_stmt = $db->prepare($paid_query);
+            $paid_stmt->bindParam(':student_id', $student_info['id']);
+            $paid_stmt->bindParam(':payment_term_id', $preferred_term_id);
+            $paid_stmt->execute();
+            $total_paid = $paid_stmt->fetchColumn();
+            
+            // Get payment breakdown
+            $payments_breakdown_query = "SELECT payment_type, installment_number, amount_paid, verification_status, submitted_at
+                                         FROM student_payments
+                                         WHERE student_id = :student_id
+                                         AND payment_term_id = :payment_term_id
+                                         ORDER BY 
+                                           CASE payment_type 
+                                             WHEN 'down_payment' THEN 1 
+                                             WHEN 'monthly_installment' THEN 2 
+                                           END,
+                                           installment_number";
+            $breakdown_stmt = $db->prepare($payments_breakdown_query);
+            $breakdown_stmt->bindParam(':student_id', $student_info['id']);
+            $breakdown_stmt->bindParam(':payment_term_id', $preferred_term_id);
+            $breakdown_stmt->execute();
+            $payments_breakdown = $breakdown_stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $balance_info = [
+                'term_name' => $preferred_term['term_name'],
+                'total_amount' => $total_amount,
+                'total_paid' => $total_paid,
+                'remaining_balance' => $total_amount - $total_paid,
+                'payments_breakdown' => $payments_breakdown,
+                'down_payment_amount' => $preferred_term['down_payment_amount'],
+                'monthly_fee_amount' => $preferred_term['monthly_fee_amount'],
+                'number_of_installments' => $preferred_term['number_of_installments']
+            ];
+        }
+    }
 }
 
 // Handle form submission
@@ -62,11 +125,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_payment'])) {
     try {
         $payment_term_id = $_POST['payment_term_id'];
         $payment_type = $_POST['payment_type'];
-        $installment_number = $_POST['installment_number'] ?? null;
+        $installment_number = null;
         
-        // Ensure installment_number is properly NULL for non-installment payments
-        if ($payment_type !== 'monthly_installment' || empty($installment_number)) {
-            $installment_number = null;
+        // Auto-increment installment number for monthly installments
+        if ($payment_type === 'monthly_installment') {
+            // Get the highest installment number already paid for this payment term
+            $installment_query = "SELECT COALESCE(MAX(installment_number), 0) as last_installment
+                                 FROM student_payments
+                                 WHERE student_id = :student_id
+                                 AND payment_term_id = :payment_term_id
+                                 AND payment_type = 'monthly_installment'
+                                 AND verification_status != 'rejected'";
+            $installment_stmt = $db->prepare($installment_query);
+            $installment_stmt->bindParam(':student_id', $student_info['id']);
+            $installment_stmt->bindParam(':payment_term_id', $payment_term_id);
+            $installment_stmt->execute();
+            $last_installment = $installment_stmt->fetchColumn();
+            
+            // Set to next installment number
+            $installment_number = $last_installment + 1;
         }
         
         $amount_paid = $_POST['amount_paid'];
@@ -220,11 +297,14 @@ ob_start();
 <?php endif; ?>
 
 <?php if (!empty($payment_terms)): ?>
-    <div style="background: var(--white); border-radius: 15px; padding: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08); margin-bottom: 2rem;">
-        <h3 style="color: var(--dark-blue); margin-bottom: 1.5rem;">💳 Submit Payment Proof</h3>
-        
-        <form method="POST" enctype="multipart/form-data" style="max-width: 800px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Two Column Layout: Payment Form + Balance Sidebar -->
+    <div style="display: grid; grid-template-columns: 1fr 400px; gap: 2rem; align-items: start; margin-bottom: 2rem;">
+        <!-- Left Column: Payment Form -->
+        <div style="background: var(--white); border-radius: 15px; padding: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+            <h3 style="color: var(--dark-blue); margin-bottom: 1.5rem;">💳 Submit Payment Proof</h3>
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Term *</label>
                     <select name="payment_term_id" id="payment_term_id" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
@@ -236,7 +316,14 @@ ob_start();
                                     data-monthly-fee="<?php echo $term['monthly_fee_amount'] ?? 0; ?>"
                                     data-installments="<?php echo $term['number_of_installments'] ?? 0; ?>"
                                     data-full-amount="<?php echo $term['full_payment_amount'] ?? 0; ?>"
-                                    <?php echo $term['is_default'] ? 'selected' : ''; ?>>
+                                    <?php 
+                                    // Auto-select preferred payment term, otherwise default term
+                                    if ($preferred_term_id && $term['id'] == $preferred_term_id) {
+                                        echo 'selected';
+                                    } elseif (!$preferred_term_id && $term['is_default']) {
+                                        echo 'selected';
+                                    }
+                                    ?>>
                                 <?php echo htmlspecialchars($term['term_name']); ?> 
                                 (<?php echo ucfirst(str_replace('_', ' ', $term['term_type'])); ?>)
                             </option>
@@ -252,14 +339,7 @@ ob_start();
                         <option value="down_payment">Down Payment</option>
                         <option value="monthly_installment">Monthly Installment</option>
                     </select>
-                </div>
-
-                <div id="installment_number_div" style="display: none;">
-                    <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Installment Number</label>
-                    <select name="installment_number" id="installment_number" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
-                        <option value="">Select Installment</option>
-                        <!-- Options will be populated by JavaScript -->
-                    </select>
+                    <small id="installment_info" style="color: var(--gray); font-size: 0.9rem; display: none;"></small>
                 </div>
 
                 <div>
@@ -321,6 +401,96 @@ ob_start();
             </button>
         </form>
     </div>
+    
+    <!-- Right Column: Balance Sidebar (Sticky) -->
+    <?php if ($balance_info): ?>
+    <div style="position: sticky; top: 2rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1.5rem; color: white; box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);">
+            <h4 style="color: white; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+                <i class="fas fa-receipt"></i> Payment Balance
+            </h4>
+            <p style="font-size: 0.85rem; opacity: 0.9; margin: 0 0 1rem 0;">
+                <?php echo htmlspecialchars($balance_info['term_name']); ?>
+            </p>
+            
+            <div style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border-radius: 10px; padding: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.2); margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-size: 0.85rem; opacity: 0.95; margin-bottom: 0.3rem;">Total Amount</div>
+                    <div style="font-size: 1.3rem; font-weight: 700;">
+                        ₱<?php echo number_format($balance_info['total_amount'], 2); ?>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="font-size: 0.85rem; opacity: 0.95; margin-bottom: 0.3rem;">Paid (Verified)</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #4CAF50;">
+                        ₱<?php echo number_format($balance_info['total_paid'], 2); ?>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255, 255, 255, 0.25); border-radius: 8px; padding: 1rem; border: 2px solid rgba(255, 255, 255, 0.4);">
+                    <div style="font-size: 0.85rem; opacity: 0.95; margin-bottom: 0.3rem;">Remaining Balance</div>
+                    <div style="font-size: 1.6rem; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        ₱<?php echo number_format($balance_info['remaining_balance'], 2); ?>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Schedule -->
+            <div style="background: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 1rem; color: var(--black); max-height: 300px; overflow-y: auto;">
+                <h5 style="color: var(--dark-blue); margin: 0 0 0.75rem 0; font-size: 0.95rem; display: flex; align-items: center; gap: 0.3rem;">
+                    <i class="fas fa-list-check"></i> Payment Breakdown
+                </h5>
+                
+                <?php if (!empty($balance_info['payments_breakdown'])): ?>
+                    <div style="font-size: 0.85rem;">
+                        <?php foreach ($balance_info['payments_breakdown'] as $payment_item): ?>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border-gray);">
+                                <div>
+                                    <div style="font-weight: 600; color: var(--dark-blue);">
+                                        <?php 
+                                        $type_display = ucfirst(str_replace('_', ' ', $payment_item['payment_type']));
+                                        if ($payment_item['installment_number']) {
+                                            $type_display .= " #{$payment_item['installment_number']}";
+                                        }
+                                        echo $type_display;
+                                        ?>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: var(--gray);">
+                                        <?php echo date('M d, Y', strtotime($payment_item['submitted_at'])); ?>
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: 600;">₱<?php echo number_format($payment_item['amount_paid'], 2); ?></div>
+                                    <?php
+                                    $badge_colors = [
+                                        'pending' => 'background: #FFA726;',
+                                        'verified' => 'background: #4CAF50;',
+                                        'rejected' => 'background: #f44336;'
+                                    ];
+                                    ?>
+                                    <span style="<?php echo $badge_colors[$payment_item['verification_status']]; ?> color: white; padding: 0.1rem 0.4rem; border-radius: 8px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; display: inline-block; margin-top: 0.2rem;">
+                                        <?php echo $payment_item['verification_status']; ?>
+                                    </span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--gray); text-align: center; padding: 1rem 0;">
+                        No payments submitted yet
+                    </p>
+                <?php endif; ?>
+            </div>
+            
+            <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(255, 255, 255, 0.15); border-radius: 8px; font-size: 0.75rem; line-height: 1.4;">
+                <i class="fas fa-info-circle"></i> Only <strong>verified</strong> payments reduce your balance.
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+<!-- End Two Column Layout -->
 <?php else: ?>
     <div class="alert alert-warning">
         No payment terms are currently available for your grade level. Please contact the finance office for assistance.
@@ -398,8 +568,7 @@ ob_start();
 document.addEventListener('DOMContentLoaded', function() {
     const paymentTermSelect = document.getElementById('payment_term_id');
     const paymentTypeSelect = document.getElementById('payment_type');
-    const installmentNumberDiv = document.getElementById('installment_number_div');
-    const installmentNumberSelect = document.getElementById('installment_number');
+    const installmentInfo = document.getElementById('installment_info');
     const amountPaidInput = document.getElementById('amount_paid');
     const amountHint = document.getElementById('amount_hint');
 
@@ -412,22 +581,38 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (termType === 'full_payment') {
             paymentTypeSelect.innerHTML += '<option value="full_payment">Full Payment</option>';
+            // Auto-select full payment if it's the only option
+            if (paymentTypeSelect.options.length === 2) {
+                paymentTypeSelect.value = 'full_payment';
+                updateAmountHint();
+            }
         } else if (termType === 'installment') {
             paymentTypeSelect.innerHTML += '<option value="down_payment">Down Payment</option>';
             paymentTypeSelect.innerHTML += '<option value="monthly_installment">Monthly Installment</option>';
         }
-        
-        updateAmountHint();
     }
 
-    function updateInstallmentOptions() {
-        const selectedTerm = paymentTermSelect.options[paymentTermSelect.selectedIndex];
-        const numInstallments = parseInt(selectedTerm.dataset.installments) || 0;
+    async function updateInstallmentInfo() {
+        const paymentTermId = paymentTermSelect.value;
         
-        installmentNumberSelect.innerHTML = '<option value="">Select Installment</option>';
+        if (!paymentTermId) {
+            installmentInfo.style.display = 'none';
+            return;
+        }
         
-        for (let i = 1; i <= numInstallments; i++) {
-            installmentNumberSelect.innerHTML += `<option value="${i}">Installment ${i}</option>`;
+        try {
+            // Fetch next installment number from the server
+            const response = await fetch(`get_next_installment.php?payment_term_id=${paymentTermId}`);
+            const data = await response.json();
+            
+            if (data.next_installment) {
+                installmentInfo.textContent = `This will be recorded as Installment #${data.next_installment}`;
+                installmentInfo.style.display = 'block';
+                installmentInfo.style.color = 'var(--primary-blue)';
+                installmentInfo.style.fontWeight = '600';
+            }
+        } catch (error) {
+            console.error('Error fetching installment info:', error);
         }
     }
 
@@ -447,6 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (paymentType === 'monthly_installment') {
             suggestedAmount = parseFloat(selectedTerm.dataset.monthlyFee) || 0;
             hint = `Suggested amount: ₱${suggestedAmount.toLocaleString()}`;
+            updateInstallmentInfo();
         }
         
         amountHint.textContent = hint;
@@ -457,25 +643,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
     paymentTermSelect.addEventListener('change', function() {
         updatePaymentOptions();
-        installmentNumberDiv.style.display = 'none';
+        installmentInfo.style.display = 'none';
+        amountPaidInput.value = '';
     });
 
     paymentTypeSelect.addEventListener('change', function() {
         if (this.value === 'monthly_installment') {
-            installmentNumberDiv.style.display = 'block';
-            updateInstallmentOptions();
+            updateInstallmentInfo();
         } else {
-            installmentNumberDiv.style.display = 'none';
+            installmentInfo.style.display = 'none';
         }
         updateAmountHint();
     });
 
-    // Initialize on page load
+    // Initialize on page load - if there's a pre-selected payment term, trigger the update
     if (paymentTermSelect.value) {
         updatePaymentOptions();
     }
 });
 </script>
+
+<style>
+    @media (max-width: 1200px) {
+        /* Stack the two-column layout on smaller screens */
+        .two-column-layout {
+            grid-template-columns: 1fr !important;
+        }
+        
+        /* Remove sticky positioning on mobile */
+        .balance-sidebar {
+            position: static !important;
+        }
+        
+        /* Adjust sidebar for mobile */
+        .balance-sidebar {
+            margin-top: 2rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        /* Further adjustments for mobile phones */
+        .balance-sidebar {
+            padding: 1.5rem;
+        }
+        
+        .balance-item {
+            font-size: 0.95rem;
+        }
+        
+        .balance-remaining h3 {
+            font-size: 1.8rem;
+        }
+    }
+</style>
 
 <?php
 $content = ob_get_clean();

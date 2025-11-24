@@ -27,7 +27,6 @@ try {
                     $room_number = trim($_POST['room_number']);
                     $description = trim($_POST['description']);
                     $teacher_assignments = $_POST['teacher_assignments'] ?? [];
-                    $primary_teacher = $_POST['primary_teacher'] ?? null;
                     
                     if ($section_name && $grade_level_id && $school_year_id) {
                         try {
@@ -44,7 +43,8 @@ try {
                             if (!empty($teacher_assignments)) {
                                 foreach ($teacher_assignments as $index => $assignment) {
                                     if (!empty($assignment['teacher_id'])) {
-                                        $is_primary = ($primary_teacher == $index) ? 1 : 0;
+                                        // Check if this teacher is marked as primary
+                                        $is_primary = isset($assignment['is_primary']) && $assignment['is_primary'] == 1 ? 1 : 0;
                                         
                                         $query = "INSERT INTO section_teachers (section_id, teacher_id, is_primary, assigned_date, created_by, created_at) 
                                                   VALUES (?, ?, ?, CURDATE(), ?, NOW())";
@@ -181,7 +181,14 @@ try {
     $school_years = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Get teachers for assignment (from teachers table joined with users table)
-    $query = "SELECT u.id, t.first_name, t.last_name, u.email 
+    // Exclude teachers who are already primary advisers in other active sections
+    $query = "SELECT u.id, t.first_name, t.last_name, u.email,
+              (SELECT COUNT(*) FROM section_teachers st 
+               JOIN sections s ON st.section_id = s.id
+               WHERE st.teacher_id = u.id 
+               AND st.is_primary = 1 
+               AND st.is_active = 1
+               AND s.is_active = 1) as is_primary_elsewhere
               FROM users u 
               JOIN roles r ON u.role_id = r.id 
               JOIN teachers t ON u.id = t.user_id
@@ -710,8 +717,12 @@ ob_start();
                                         <select name="teacher_assignments[0][teacher_id]" class="form-select teacher-select">
                                             <option value="">Select Teacher</option>
                                             <?php foreach ($teachers as $teacher): ?>
-                                                <option value="<?php echo $teacher['id']; ?>">
+                                                <option value="<?php echo $teacher['id']; ?>" 
+                                                        data-is-primary-elsewhere="<?php echo $teacher['is_primary_elsewhere']; ?>">
                                                     <?php echo htmlspecialchars($teacher['first_name'] . ' ' . $teacher['last_name']); ?>
+                                                    <?php if ($teacher['is_primary_elsewhere'] > 0): ?>
+                                                        (Already Primary Adviser)
+                                                    <?php endif; ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -724,9 +735,9 @@ ob_start();
                                 <div class="form-group-modern">
                                     <label class="form-label">Primary</label>
                                     <div class="checkbox-wrapper">
-                                        <input type="radio" name="primary_teacher" value="0" class="primary-radio" id="primary_0">
+                                        <input type="checkbox" name="teacher_assignments[0][is_primary]" value="1" class="primary-checkbox" id="primary_0">
                                         <label for="primary_0" class="checkbox-label-modern">
-                                            <span class="radio-custom"></span>
+                                            <span class="checkbox-custom"></span>
                                         </label>
                                     </div>
                                 </div>
@@ -1153,9 +1164,9 @@ function addTeacherAssignmentRow(index) {
             
             <div class="form-group-modern">
                 <div class="checkbox-wrapper">
-                    <input type="radio" name="primary_teacher" value="${index}" class="primary-radio" id="primary_${index}">
+                    <input type="checkbox" name="teacher_assignments[${index}][is_primary]" value="1" class="primary-checkbox" id="primary_${index}">
                     <label for="primary_${index}" class="checkbox-label-modern">
-                        <span class="radio-custom"></span>
+                        <span class="checkbox-custom"></span>
                     </label>
                 </div>
             </div>
@@ -1191,7 +1202,31 @@ function updateTeacherAssignmentControls() {
         const addBtn = row.querySelector('.add-teacher-btn');
         const removeBtn = row.querySelector('.remove-teacher-btn');
         const teacherSelect = row.querySelector('.teacher-select');
+        const primaryCheckbox = row.querySelector('.primary-checkbox');
+        const checkboxLabel = row.querySelector('.checkbox-label-modern');
         const hasTeacher = teacherSelect.value !== '';
+        
+        // Check if selected teacher is already a primary adviser elsewhere
+        const selectedOption = teacherSelect.options[teacherSelect.selectedIndex];
+        const isPrimaryElsewhere = selectedOption && selectedOption.getAttribute('data-is-primary-elsewhere') > 0;
+        
+        // Disable primary checkbox if teacher is already primary elsewhere
+        if (isPrimaryElsewhere) {
+            primaryCheckbox.disabled = true;
+            primaryCheckbox.checked = false;
+            if (checkboxLabel) {
+                checkboxLabel.style.opacity = '0.5';
+                checkboxLabel.style.cursor = 'not-allowed';
+                checkboxLabel.title = 'This teacher is already a primary adviser in another section';
+            }
+        } else {
+            primaryCheckbox.disabled = false;
+            if (checkboxLabel) {
+                checkboxLabel.style.opacity = '1';
+                checkboxLabel.style.cursor = 'pointer';
+                checkboxLabel.title = '';
+            }
+        }
         
         // Show/hide buttons based on position and content
         if (index === rows.length - 1) {
@@ -2065,37 +2100,42 @@ window.addEventListener('load', animateProgressBars);
     height: 100%;
 }
 
-.radio-custom {
+.checkbox-custom {
     width: 20px;
     height: 20px;
     border: 2px solid var(--border-gray);
-    border-radius: 50%;
+    border-radius: 4px;
     position: relative;
     transition: all 0.2s ease;
     background: var(--white);
 }
 
-.primary-radio {
+.primary-checkbox {
     position: absolute;
     opacity: 0;
     pointer-events: none;
 }
 
-.primary-radio:checked + .checkbox-label-modern .radio-custom {
+.primary-checkbox:checked + .checkbox-label-modern .checkbox-custom {
     background: var(--primary-blue);
     border-color: var(--primary-blue);
 }
 
-.primary-radio:checked + .checkbox-label-modern .radio-custom::after {
-    content: '';
+.primary-checkbox:checked + .checkbox-label-modern .checkbox-custom::after {
+    content: '✓';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 8px;
-    height: 8px;
-    background: white;
-    border-radius: 50%;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.primary-checkbox:disabled + .checkbox-label-modern .checkbox-custom {
+    background: var(--light-gray);
+    cursor: not-allowed;
 }
 
 .form-actions-modern {

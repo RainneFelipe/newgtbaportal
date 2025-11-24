@@ -93,6 +93,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     break;
                     
+                case 'assign_all_subjects':
+                    $grade_level_id = $_POST['grade_level_id'];
+                    $school_year_id = $_POST['school_year_id'];
+                    $is_required = isset($_POST['is_required']) ? 1 : 0;
+                    
+                    // Get grade level info to determine subject prefix
+                    $grade_query = "SELECT grade_name FROM grade_levels WHERE id = ?";
+                    $grade_stmt = $db->prepare($grade_query);
+                    $grade_stmt->execute([$grade_level_id]);
+                    $grade_info = $grade_stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$grade_info) {
+                        $message = "Invalid grade level selected!";
+                        $messageType = 'error';
+                        break;
+                    }
+                    
+                    // Determine grade prefix
+                    $grade_name = $grade_info['grade_name'];
+                    $gradePrefix = '';
+                    if (stripos($grade_name, 'nursery') !== false) {
+                        $gradePrefix = 'NURS-%';
+                    } else if (stripos($grade_name, 'kindergarten') !== false) {
+                        $gradePrefix = 'K-%';
+                    } else {
+                        preg_match('/Grade\s+(\d+)/i', $grade_name, $matches);
+                        if (!empty($matches[1])) {
+                            $gradePrefix = 'G' . $matches[1] . '-%';
+                        }
+                    }
+                    
+                    if (empty($gradePrefix)) {
+                        $message = "Could not determine subject prefix for " . htmlspecialchars($grade_name);
+                        $messageType = 'error';
+                        break;
+                    }
+                    
+                    // Get all subjects matching the grade prefix
+                    $subjects_query = "SELECT id FROM subjects WHERE subject_code LIKE ? AND is_active = 1 ORDER BY subject_code";
+                    $subjects_stmt = $db->prepare($subjects_query);
+                    $subjects_stmt->execute([$gradePrefix]);
+                    $matching_subjects = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
+                    
+                    if (empty($matching_subjects)) {
+                        $message = "No subjects found for " . htmlspecialchars($grade_name) . "! Please create subjects with prefix " . str_replace('%', '', $gradePrefix) . " first.";
+                        $messageType = 'error';
+                        break;
+                    }
+                    
+                    // Begin transaction
+                    $db->beginTransaction();
+                    
+                    try {
+                        $assigned_count = 0;
+                        $skipped_count = 0;
+                        $order = 1;
+                        
+                        foreach ($matching_subjects as $subject) {
+                            // Check if already assigned
+                            $check_query = "SELECT COUNT(*) FROM curriculum WHERE grade_level_id = ? AND subject_id = ? AND school_year_id = ?";
+                            $check_stmt = $db->prepare($check_query);
+                            $check_stmt->execute([$grade_level_id, $subject['id'], $school_year_id]);
+                            
+                            if ($check_stmt->fetchColumn() > 0) {
+                                $skipped_count++;
+                                continue;
+                            }
+                            
+                            // Insert curriculum assignment
+                            $insert_query = "INSERT INTO curriculum (grade_level_id, subject_id, school_year_id, is_required, order_sequence, created_by) VALUES (?, ?, ?, ?, ?, ?)";
+                            $insert_stmt = $db->prepare($insert_query);
+                            $insert_stmt->execute([$grade_level_id, $subject['id'], $school_year_id, $is_required, $order, $_SESSION['user_id']]);
+                            
+                            $assigned_count++;
+                            $order++;
+                        }
+                        
+                        $db->commit();
+                        
+                        $message = "Successfully assigned $assigned_count subject(s) to " . htmlspecialchars($grade_name) . "!";
+                        if ($skipped_count > 0) {
+                            $message .= " ($skipped_count already assigned)";
+                        }
+                        $messageType = 'success';
+                        
+                    } catch (Exception $e) {
+                        $db->rollback();
+                        $message = "Error assigning subjects: " . $e->getMessage();
+                        $messageType = 'error';
+                    }
+                    break;
+                    
                 case 'delete_subject':
                     $subject_id = $_POST['subject_id'];
                     
@@ -490,7 +582,20 @@ ob_start();
 <div id="assign-tab" class="tab-content" style="display: none; background: var(--white); border-radius: 15px; padding: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
     <h2 style="margin-bottom: 2rem; color: var(--black);">Assign Subject to Curriculum</h2>
     
-    <form method="POST" style="max-width: 600px;">
+    <!-- Tabs for Single or Bulk Assignment -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--light-gray);">
+        <button onclick="showAssignMode('single')" id="single-assign-btn" class="assign-mode-btn" 
+                style="padding: 1rem 2rem; border: none; background: transparent; color: var(--primary-blue); cursor: pointer; font-weight: 600; border-bottom: 3px solid var(--primary-blue);">
+            Assign Single Subject
+        </button>
+        <button onclick="showAssignMode('bulk')" id="bulk-assign-btn" class="assign-mode-btn"
+                style="padding: 1rem 2rem; border: none; background: transparent; color: var(--gray); cursor: pointer; font-weight: 600; border-bottom: 3px solid transparent;">
+            Assign All Subjects
+        </button>
+    </div>
+    
+    <!-- Single Assignment Form -->
+    <form method="POST" id="single-assign-form" style="max-width: 600px;">
         <input type="hidden" name="action" value="assign_curriculum">
         
         <div style="margin-bottom: 1.5rem;">
@@ -508,20 +613,22 @@ ob_start();
         
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Grade Level:</label>
-            <select name="grade_level_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+            <select name="grade_level_id" id="assign_grade_level_id" required onchange="filterSubjectsByGrade()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
                 <option value="">Select Grade Level</option>
                 <?php foreach ($grade_levels as $grade): ?>
-                <option value="<?php echo $grade['id']; ?>"><?php echo htmlspecialchars($grade['grade_name']); ?></option>
+                <option value="<?php echo $grade['id']; ?>" data-grade-name="<?php echo htmlspecialchars($grade['grade_name']); ?>">
+                    <?php echo htmlspecialchars($grade['grade_name']); ?>
+                </option>
                 <?php endforeach; ?>
             </select>
         </div>
         
         <div style="margin-bottom: 1.5rem;">
             <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Subject:</label>
-            <select name="subject_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
-                <option value="">Select Subject</option>
+            <select name="subject_id" id="assign_subject_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+                <option value="">Select Grade Level First</option>
                 <?php foreach ($all_subjects as $subject): ?>
-                <option value="<?php echo $subject['id']; ?>">
+                <option value="<?php echo $subject['id']; ?>" data-subject-code="<?php echo htmlspecialchars($subject['subject_code']); ?>" style="display: none;">
                     <?php echo htmlspecialchars($subject['subject_code'] . ' - ' . $subject['subject_name']); ?>
                 </option>
                 <?php endforeach; ?>
@@ -543,6 +650,61 @@ ob_start();
         
         <button type="submit" style="background: var(--primary-blue); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 1rem;">
             Assign to Curriculum
+        </button>
+    </form>
+    
+    <!-- Bulk Assignment Form -->
+    <form method="POST" id="bulk-assign-form" style="max-width: 600px; display: none;">
+        <input type="hidden" name="action" value="assign_all_subjects">
+        
+        <div style="background: var(--light-blue); padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid var(--primary-blue);">
+            <p style="margin: 0; color: var(--black);">
+                <strong>Bulk Assignment:</strong> This will assign all subjects matching the selected grade level to the curriculum at once. 
+                Subjects are matched by their code prefix (e.g., G4- for Grade 4).
+            </p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">School Year:</label>
+            <select name="school_year_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+                <option value="">Select School Year</option>
+                <?php foreach ($school_years as $year): ?>
+                <option value="<?php echo $year['id']; ?>" <?php echo $year['is_active'] ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($year['year_label']); ?> 
+                    <?php echo $year['is_active'] ? '(Active)' : ''; ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Grade Level:</label>
+            <select name="grade_level_id" id="bulk_grade_level_id" required onchange="previewBulkSubjects()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+                <option value="">Select Grade Level</option>
+                <?php foreach ($grade_levels as $grade): ?>
+                <option value="<?php echo $grade['id']; ?>" data-grade-name="<?php echo htmlspecialchars($grade['grade_name']); ?>">
+                    <?php echo htmlspecialchars($grade['grade_name']); ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        
+        <div id="bulk-preview" style="margin-bottom: 1.5rem; display: none;">
+            <div style="background: var(--white); border: 2px solid var(--light-gray); border-radius: 8px; padding: 1rem;">
+                <h4 style="margin: 0 0 1rem 0; color: var(--black);">Subjects to be assigned:</h4>
+                <div id="bulk-preview-list" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: flex; align-items: center; color: var(--black); font-weight: 600; cursor: pointer;">
+                <input type="checkbox" name="is_required" checked style="margin-right: 0.5rem; transform: scale(1.2);">
+                Mark all as Required Subjects
+            </label>
+        </div>
+        
+        <button type="submit" id="bulk-submit-btn" disabled style="background: var(--gray); color: white; border: none; padding: 1rem 2rem; border-radius: 8px; cursor: not-allowed; font-weight: 600; font-size: 1rem;">
+            Assign All Subjects
         </button>
     </form>
 </div>
@@ -675,6 +837,159 @@ ob_start();
 </div>
 
 <script>
+// Store all subjects data for filtering
+const allSubjectsData = <?php echo json_encode($all_subjects); ?>;
+
+function showAssignMode(mode) {
+    const singleForm = document.getElementById('single-assign-form');
+    const bulkForm = document.getElementById('bulk-assign-form');
+    const singleBtn = document.getElementById('single-assign-btn');
+    const bulkBtn = document.getElementById('bulk-assign-btn');
+    
+    if (mode === 'single') {
+        singleForm.style.display = 'block';
+        bulkForm.style.display = 'none';
+        singleBtn.style.color = 'var(--primary-blue)';
+        singleBtn.style.borderBottomColor = 'var(--primary-blue)';
+        bulkBtn.style.color = 'var(--gray)';
+        bulkBtn.style.borderBottomColor = 'transparent';
+    } else {
+        singleForm.style.display = 'none';
+        bulkForm.style.display = 'block';
+        bulkBtn.style.color = 'var(--primary-blue)';
+        bulkBtn.style.borderBottomColor = 'var(--primary-blue)';
+        singleBtn.style.color = 'var(--gray)';
+        singleBtn.style.borderBottomColor = 'transparent';
+    }
+}
+
+function previewBulkSubjects() {
+    const gradeSelect = document.getElementById('bulk_grade_level_id');
+    const previewDiv = document.getElementById('bulk-preview');
+    const previewList = document.getElementById('bulk-preview-list');
+    const submitBtn = document.getElementById('bulk-submit-btn');
+    
+    if (!gradeSelect || !previewDiv || !previewList) return;
+    
+    const selectedGradeOption = gradeSelect.options[gradeSelect.selectedIndex];
+    const selectedGradeName = selectedGradeOption ? selectedGradeOption.getAttribute('data-grade-name') : '';
+    
+    if (!selectedGradeName) {
+        previewDiv.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.style.background = 'var(--gray)';
+        submitBtn.style.cursor = 'not-allowed';
+        return;
+    }
+    
+    // Extract grade prefix
+    let gradePrefix = '';
+    if (selectedGradeName.toLowerCase().includes('nursery')) {
+        gradePrefix = 'NURS';
+    } else if (selectedGradeName.toLowerCase().includes('kindergarten')) {
+        gradePrefix = 'K';
+    } else {
+        const gradeMatch = selectedGradeName.match(/Grade\s+(\d+)/i);
+        if (gradeMatch) {
+            gradePrefix = 'G' + gradeMatch[1];
+        }
+    }
+    
+    // Filter subjects
+    const matchingSubjects = allSubjectsData.filter(subject => 
+        subject.subject_code.toUpperCase().startsWith(gradePrefix + '-')
+    );
+    
+    if (matchingSubjects.length === 0) {
+        previewList.innerHTML = '<p style="margin: 0; color: var(--warning);">No subjects found for ' + selectedGradeName + '</p>';
+        previewDiv.style.display = 'block';
+        submitBtn.disabled = true;
+        submitBtn.style.background = 'var(--gray)';
+        submitBtn.style.cursor = 'not-allowed';
+    } else {
+        let html = '<ul style="margin: 0; padding-left: 1.5rem; color: var(--black);">';
+        matchingSubjects.forEach(subject => {
+            html += '<li style="margin-bottom: 0.5rem;"><strong>' + escapeHtml(subject.subject_code) + '</strong> - ' + escapeHtml(subject.subject_name) + '</li>';
+        });
+        html += '</ul>';
+        html += '<p style="margin-top: 1rem; color: var(--success); font-weight: 600;">Total: ' + matchingSubjects.length + ' subject(s)</p>';
+        
+        previewList.innerHTML = html;
+        previewDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.style.background = 'var(--primary-blue)';
+        submitBtn.style.cursor = 'pointer';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function filterSubjectsByGrade() {
+    const gradeSelect = document.getElementById('assign_grade_level_id');
+    const subjectSelect = document.getElementById('assign_subject_id');
+    
+    if (!gradeSelect || !subjectSelect) return;
+    
+    const selectedGradeOption = gradeSelect.options[gradeSelect.selectedIndex];
+    const selectedGradeName = selectedGradeOption ? selectedGradeOption.getAttribute('data-grade-name') : '';
+    
+    // Reset subject select
+    subjectSelect.value = '';
+    
+    if (!selectedGradeName) {
+        // No grade selected, hide all subjects
+        subjectSelect.innerHTML = '<option value="">Select Grade Level First</option>';
+        Array.from(subjectSelect.options).forEach(option => {
+            if (option.value) {
+                option.style.display = 'none';
+            }
+        });
+        return;
+    }
+    
+    // Extract grade identifier from grade name (e.g., "Grade 3" -> "G3", "Grade 10" -> "G10", "Nursery" -> "NURS")
+    let gradePrefix = '';
+    if (selectedGradeName.toLowerCase().includes('nursery')) {
+        gradePrefix = 'NURS';
+    } else if (selectedGradeName.toLowerCase().includes('kindergarten')) {
+        gradePrefix = 'K';
+    } else {
+        // Extract number from "Grade X" format
+        const gradeMatch = selectedGradeName.match(/Grade\s+(\d+)/i);
+        if (gradeMatch) {
+            gradePrefix = 'G' + gradeMatch[1];
+        }
+    }
+    
+    // Show/hide subjects based on grade prefix in subject code
+    let hasVisibleOptions = false;
+    Array.from(subjectSelect.options).forEach(option => {
+        if (option.value) {
+            const subjectCode = option.getAttribute('data-subject-code') || '';
+            
+            // Check if subject code starts with the grade prefix
+            if (subjectCode.toUpperCase().startsWith(gradePrefix + '-')) {
+                option.style.display = 'block';
+                hasVisibleOptions = true;
+            } else {
+                option.style.display = 'none';
+            }
+        }
+    });
+    
+    // Update first option based on whether subjects are available
+    const firstOption = subjectSelect.options[0];
+    if (hasVisibleOptions) {
+        firstOption.textContent = 'Select Subject';
+    } else {
+        firstOption.textContent = 'No subjects available for ' + selectedGradeName;
+    }
+}
+
 function showAddSubjectModal() {
     document.getElementById('addSubjectModal').style.display = 'block';
 }

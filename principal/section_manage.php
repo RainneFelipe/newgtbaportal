@@ -42,8 +42,27 @@ try {
                         try {
                             $db->beginTransaction();
                             
-                            // If setting as primary, remove primary status from other teachers
+                            // If setting as primary, check if teacher is already primary adviser in another section
                             if ($is_primary) {
+                                $check_primary_query = "SELECT s.section_name, gl.grade_name 
+                                                       FROM section_teachers st
+                                                       JOIN sections s ON st.section_id = s.id
+                                                       JOIN grade_levels gl ON s.grade_level_id = gl.id
+                                                       WHERE st.teacher_id = ? AND st.is_primary = 1 AND st.is_active = 1
+                                                       LIMIT 1";
+                                $check_primary_stmt = $db->prepare($check_primary_query);
+                                $check_primary_stmt->execute([$teacher_id]);
+                                $existing_primary = $check_primary_stmt->fetch(PDO::FETCH_ASSOC);
+                                
+                                if ($existing_primary) {
+                                    $db->rollBack();
+                                    $error_message = "This teacher is already a primary adviser for " . 
+                                                   htmlspecialchars($existing_primary['section_name']) . " (" . 
+                                                   htmlspecialchars($existing_primary['grade_name']) . ")";
+                                    break;
+                                }
+                                
+                                // Remove primary status from other teachers in this section
                                 $query = "UPDATE section_teachers SET is_primary = 0 WHERE section_id = ? AND is_active = 1";
                                 $stmt = $db->prepare($query);
                                 $stmt->execute([$section_id]);
@@ -55,6 +74,7 @@ try {
                             $check_stmt->execute([$section_id, $teacher_id]);
                             
                             if ($check_stmt->fetch()) {
+                                $db->rollBack();
                                 $error_message = "Teacher is already assigned to this section.";
                             } else {
                                 // Assign teacher to section
@@ -63,9 +83,8 @@ try {
                                 $stmt = $db->prepare($query);
                                 $stmt->execute([$section_id, $teacher_id, $is_primary, $_SESSION['user_id']]);
                                 $success_message = "Teacher assigned successfully!";
+                                $db->commit();
                             }
-                            
-                            $db->commit();
                         } catch (Exception $e) {
                             $db->rollBack();
                             $error_message = "Failed to assign teacher: " . $e->getMessage();
@@ -94,18 +113,49 @@ try {
                         try {
                             $db->beginTransaction();
                             
-                            // Remove primary status from all teachers in section
-                            $query = "UPDATE section_teachers SET is_primary = 0 WHERE section_id = ? AND is_active = 1";
-                            $stmt = $db->prepare($query);
-                            $stmt->execute([$section_id]);
+                            // Get teacher ID from assignment
+                            $get_teacher_query = "SELECT teacher_id FROM section_teachers WHERE id = ?";
+                            $get_teacher_stmt = $db->prepare($get_teacher_query);
+                            $get_teacher_stmt->execute([$assignment_id]);
+                            $assignment_data = $get_teacher_stmt->fetch(PDO::FETCH_ASSOC);
                             
-                            // Set the selected teacher as primary
-                            $query = "UPDATE section_teachers SET is_primary = 1, updated_at = NOW() WHERE id = ? AND section_id = ?";
-                            $stmt = $db->prepare($query);
-                            $stmt->execute([$assignment_id, $section_id]);
-                            
-                            $db->commit();
-                            $success_message = "Primary teacher updated successfully!";
+                            if ($assignment_data) {
+                                // Check if teacher is already primary adviser in another section
+                                $check_primary_query = "SELECT s.section_name, gl.grade_name 
+                                                       FROM section_teachers st
+                                                       JOIN sections s ON st.section_id = s.id
+                                                       JOIN grade_levels gl ON s.grade_level_id = gl.id
+                                                       WHERE st.teacher_id = ? AND st.is_primary = 1 
+                                                       AND st.is_active = 1 AND st.section_id != ?
+                                                       LIMIT 1";
+                                $check_primary_stmt = $db->prepare($check_primary_query);
+                                $check_primary_stmt->execute([$assignment_data['teacher_id'], $section_id]);
+                                $existing_primary = $check_primary_stmt->fetch(PDO::FETCH_ASSOC);
+                                
+                                if ($existing_primary) {
+                                    $db->rollBack();
+                                    $error_message = "This teacher is already a primary adviser for " . 
+                                                   htmlspecialchars($existing_primary['section_name']) . " (" . 
+                                                   htmlspecialchars($existing_primary['grade_name']) . ")";
+                                    break;
+                                }
+                                
+                                // Remove primary status from all teachers in section
+                                $query = "UPDATE section_teachers SET is_primary = 0 WHERE section_id = ? AND is_active = 1";
+                                $stmt = $db->prepare($query);
+                                $stmt->execute([$section_id]);
+                                
+                                // Set the selected teacher as primary
+                                $query = "UPDATE section_teachers SET is_primary = 1, updated_at = NOW() WHERE id = ? AND section_id = ?";
+                                $stmt = $db->prepare($query);
+                                $stmt->execute([$assignment_id, $section_id]);
+                                
+                                $db->commit();
+                                $success_message = "Primary teacher updated successfully!";
+                            } else {
+                                $db->rollBack();
+                                $error_message = "Invalid assignment ID.";
+                            }
                         } catch (Exception $e) {
                             $db->rollBack();
                             $error_message = "Failed to update primary teacher: " . $e->getMessage();
@@ -335,7 +385,10 @@ try {
     $assigned_teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Get available teachers (not assigned to this section)
-    $query = "SELECT u.id, t.first_name, t.last_name, t.specialization, u.email
+    // Teachers who are primary advisers elsewhere can still be added as non-primary teachers
+    $query = "SELECT u.id, t.first_name, t.last_name, t.specialization, u.email,
+              (SELECT COUNT(*) FROM section_teachers 
+               WHERE teacher_id = u.id AND is_primary = 1 AND is_active = 1) as is_primary_elsewhere
               FROM users u
               JOIN roles r ON u.role_id = r.id
               JOIN teachers t ON u.id = t.user_id
@@ -710,8 +763,12 @@ ob_start();
                         <select id="teacher_id" name="teacher_id" class="form-select" required>
                             <option value="">Choose a teacher...</option>
                             <?php foreach ($available_teachers as $teacher): ?>
-                                <option value="<?php echo $teacher['id']; ?>">
+                                <option value="<?php echo $teacher['id']; ?>" 
+                                        data-is-primary-elsewhere="<?php echo $teacher['is_primary_elsewhere']; ?>">
                                     <?php echo htmlspecialchars($teacher['first_name'] . ' ' . $teacher['last_name'] . ' - ' . $teacher['specialization']); ?>
+                                    <?php if ($teacher['is_primary_elsewhere']): ?>
+                                        (Primary adviser elsewhere)
+                                    <?php endif; ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -722,11 +779,14 @@ ob_start();
                 </div>
                 
                 <div class="checkbox-group-modern">
-                    <label class="checkbox-label-modern">
-                        <input type="checkbox" name="is_primary" class="checkbox-input">
+                    <label class="checkbox-label-modern" id="primary-checkbox-label">
+                        <input type="checkbox" name="is_primary" id="is_primary_checkbox" class="checkbox-input" style="display: none;">
                         <span class="checkbox-custom"></span>
                         <span class="checkbox-text">Set as primary teacher for this section</span>
                     </label>
+                    <div id="primary-warning" class="form-help" style="display: none; color: var(--warning-dark, #856404); margin-top: 0.5rem;">
+                        ⚠️ This teacher is already a primary adviser in another section and cannot be set as primary here.
+                    </div>
                 </div>
                 
                 <div class="form-actions-modern">
@@ -1116,7 +1176,62 @@ function openModal(modal) {
 function closeModal(modal) {
     modal.classList.remove('modal-open');
     document.body.style.overflow = '';
+    
+    // Reset add teacher form if it's the add teacher modal
+    if (modal.id === 'addTeacherModal') {
+        const form = modal.querySelector('#addTeacherForm');
+        if (form) {
+            form.reset();
+            resetPrimaryCheckbox();
+        }
+    }
 }
+
+function resetPrimaryCheckbox() {
+    const checkbox = document.getElementById('is_primary_checkbox');
+    const label = document.getElementById('primary-checkbox-label');
+    const warning = document.getElementById('primary-warning');
+    
+    if (checkbox && label && warning) {
+        checkbox.disabled = false;
+        checkbox.checked = false;
+        label.style.opacity = '1';
+        label.style.cursor = 'pointer';
+        warning.style.display = 'none';
+    }
+}
+
+// Handle teacher selection change
+document.addEventListener('DOMContentLoaded', function() {
+    const teacherSelect = document.getElementById('teacher_id');
+    
+    if (teacherSelect) {
+        teacherSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const isPrimaryElsewhere = selectedOption.getAttribute('data-is-primary-elsewhere') === '1';
+            
+            const checkbox = document.getElementById('is_primary_checkbox');
+            const label = document.getElementById('primary-checkbox-label');
+            const warning = document.getElementById('primary-warning');
+            
+            if (isPrimaryElsewhere) {
+                // Disable primary checkbox
+                checkbox.disabled = true;
+                checkbox.checked = false;
+                label.style.opacity = '0.6';
+                label.style.cursor = 'not-allowed';
+                warning.style.display = 'block';
+            } else {
+                // Enable primary checkbox
+                checkbox.disabled = false;
+                label.style.opacity = '1';
+                label.style.cursor = 'pointer';
+                warning.style.display = 'none';
+            }
+        });
+    }
+});
+
 </script>
 
 <style>
@@ -1703,10 +1818,17 @@ function closeModal(modal) {
     gap: 0.75rem;
     cursor: pointer;
     font-weight: 500;
+    transition: opacity 0.2s ease;
 }
 
 .checkbox-input {
     margin: 0;
+}
+
+.checkbox-input:disabled + .checkbox-custom {
+    background-color: var(--light-gray);
+    border-color: var(--border-gray);
+    cursor: not-allowed;
 }
 
 .checkbox-custom {
@@ -1723,6 +1845,11 @@ function closeModal(modal) {
     border-color: var(--primary-blue);
 }
 
+.checkbox-input:disabled:checked + .checkbox-custom {
+    background-color: var(--gray);
+    border-color: var(--gray);
+}
+
 .checkbox-input:checked + .checkbox-custom::after {
     content: '✓';
     position: absolute;
@@ -1736,6 +1863,12 @@ function closeModal(modal) {
 
 .checkbox-text {
     color: var(--black);
+}
+
+.form-help {
+    font-size: 0.875rem;
+    color: var(--gray);
+    margin-top: 0.25rem;
 }
 
 .form-actions-modern {

@@ -20,6 +20,26 @@ $user = new User($conn);
 $page_title = "Student Records";
 $base_url = "../";
 
+// Handle status change
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_status'])) {
+    try {
+        $student_id = $_POST['student_id'];
+        $new_status = $_POST['new_status'];
+        
+        $update_stmt = $conn->prepare("UPDATE students SET enrollment_status = ? WHERE id = ?");
+        $update_stmt->execute([$new_status, $student_id]);
+        
+        // Log the action
+        $user->logAudit($_SESSION['user_id'], 'Student Status Change', 'students', $student_id, "Changed enrollment status to: $new_status");
+        
+        $_SESSION['success_message'] = 'Student status updated successfully!';
+        header('Location: student_records.php');
+        exit();
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Error updating status: ' . $e->getMessage();
+    }
+}
+
 // Handle search and filters
 $search = $_GET['search'] ?? '';
 $grade_filter = $_GET['grade_filter'] ?? '';
@@ -106,6 +126,16 @@ include '../includes/header.php';
 
 <div class="main-wrapper">
     <div class="content-wrapper" style="max-width: 1400px; margin: 0 auto; padding: 2rem 1rem;">
+        <?php if (isset($_SESSION['success_message'])): ?>
+            <div class="alert alert-success" style="background: #d4edda; color: #155724; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border-left: 4px solid #28a745;">
+                <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success_message']); unset($_SESSION['success_message']); ?>
+            </div>
+        <?php endif; ?>
+        <?php if (isset($_SESSION['error_message'])): ?>
+            <div class="alert alert-danger" style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border-left: 4px solid #dc3545;">
+                <i class="fas fa-exclamation-circle"></i> <?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?>
+            </div>
+        <?php endif; ?>
         <div class="content-header">
             <div class="header-left">
                 <h1><i class="fas fa-users"></i> Student Records</h1>
@@ -148,10 +178,12 @@ include '../includes/header.php';
                     <label for="status_filter">Status</label>
                     <select id="status_filter" name="status_filter">
                         <option value="">All Status</option>
+                        <option value="Pending Payment" <?php echo $status_filter === 'Pending Payment' ? 'selected' : ''; ?>>Pending Payment</option>
                         <option value="Enrolled" <?php echo $status_filter === 'Enrolled' ? 'selected' : ''; ?>>Enrolled</option>
+                        <option value="Suspended" <?php echo $status_filter === 'Suspended' ? 'selected' : ''; ?>>Suspended</option>
                         <option value="Dropped" <?php echo $status_filter === 'Dropped' ? 'selected' : ''; ?>>Dropped</option>
-                        <option value="Graduated" <?php echo $status_filter === 'Graduated' ? 'selected' : ''; ?>>Graduated</option>
                         <option value="Transferred" <?php echo $status_filter === 'Transferred' ? 'selected' : ''; ?>>Transferred</option>
+                        <option value="Graduated" <?php echo $status_filter === 'Graduated' ? 'selected' : ''; ?>>Graduated</option>
                     </select>
                 </div>
                 
@@ -263,7 +295,7 @@ include '../includes/header.php';
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <span class="status-badge status-<?php echo strtolower($student['enrollment_status']); ?>">
+                                    <span class="status-badge status-<?php echo strtolower(str_replace(' ', '-', $student['enrollment_status'])); ?>">
                                         <?php echo htmlspecialchars($student['enrollment_status']); ?>
                                     </span>
                                 </td>
@@ -280,6 +312,9 @@ include '../includes/header.php';
                                 </td>
                                 <td class="actions">
                                     <div class="action-buttons">
+                                        <button class="btn btn-sm btn-warning" onclick="changeStatus(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['enrollment_status']); ?>')" title="Change Status">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </button>
                                         <button class="btn btn-sm btn-primary" onclick="editStudent(<?php echo $student['id']; ?>)" title="Edit">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -596,39 +631,50 @@ include '../includes/header.php';
 .status-badge {
     padding: 0.5rem 0.8rem;
     border-radius: 15px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
     display: inline-block;
     text-align: center;
-    width: 100%;
+    width: auto;
     min-width: 90px;
-    max-width: 110px;
+    max-width: 140px;
     white-space: nowrap;
-    overflow: visible;
-    text-overflow: clip;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
+.status-pending-payment { 
+    background: linear-gradient(135deg, #F39C12, #E67E22); 
+    color: white;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
+}
 .status-enrolled { 
     background: linear-gradient(135deg, #27AE60, #2ECC71); 
     color: white;
     box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+.status-suspended { 
+    background: linear-gradient(135deg, #9B59B6, #8E44AD); 
+    color: white;
+    box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
 }
 .status-dropped { 
     background: linear-gradient(135deg, #E74C3C, #C0392B); 
     color: white;
     box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
 }
+.status-transferred { 
+    background: linear-gradient(135deg, #34495E, #2C3E50); 
+    color: white;
+    box-shadow: 0 2px 8px rgba(52, 73, 94, 0.3);
+}
 .status-graduated { 
     background: linear-gradient(135deg, #3498DB, #2980B9); 
     color: white;
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
-}
-.status-transferred { 
-    background: linear-gradient(135deg, #F39C12, #E67E22); 
-    color: white;
-    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3);
 }
 
 .type-badge {
@@ -753,6 +799,11 @@ include '../includes/header.php';
 
 .btn-secondary {
     background: linear-gradient(135deg, var(--gray), #34495E);
+    color: white;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #F39C12, #E67E22);
     color: white;
 }
 
@@ -1034,7 +1085,67 @@ include '../includes/header.php';
 }
 </style>
 
+<!-- Change Status Modal -->
+<div id="changeStatusModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2.5rem; border-radius: 20px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+        <h3 style="margin-top: 0; color: var(--dark-blue); font-size: 1.5rem; margin-bottom: 1.5rem;">
+            <i class="fas fa-exchange-alt"></i> Change Student Status
+        </h3>
+        <form method="POST" id="changeStatusForm">
+            <input type="hidden" name="change_status" value="1">
+            <input type="hidden" name="student_id" id="change_student_id">
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.75rem; color: var(--dark-blue); font-weight: 600;">Current Status:</label>
+                <div style="padding: 1rem; background: var(--light-blue); border-radius: 10px; font-weight: 600; color: var(--primary-blue);" id="current_status_display"></div>
+            </div>
+            
+            <div style="margin-bottom: 2rem;">
+                <label style="display: block; margin-bottom: 0.75rem; color: var(--dark-blue); font-weight: 600;">New Status:</label>
+                <select name="new_status" id="new_status" required style="width: 100%; padding: 1rem; border: 2px solid var(--border-gray); border-radius: 12px; font-size: 1rem;">
+                    <option value="">Select New Status</option>
+                    <option value="Pending Payment">Pending Payment</option>
+                    <option value="Enrolled">Enrolled</option>
+                    <option value="Suspended">Suspended</option>
+                    <option value="Dropped">Dropped</option>
+                    <option value="Transferred">Transferred</option>
+                    <option value="Graduated">Graduated</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" onclick="closeChangeStatusModal()" 
+                        style="background: var(--gray); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        style="background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue)); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 10px; cursor: pointer; font-weight: 600;">
+                    Update Status
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function changeStatus(studentId, currentStatus) {
+    document.getElementById('change_student_id').value = studentId;
+    document.getElementById('current_status_display').textContent = currentStatus;
+    document.getElementById('new_status').value = '';
+    document.getElementById('changeStatusModal').style.display = 'flex';
+}
+
+function closeChangeStatusModal() {
+    document.getElementById('changeStatusModal').style.display = 'none';
+}
+
+// Close modal when clicking outside
+document.getElementById('changeStatusModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeChangeStatusModal();
+    }
+});
+
 function editStudent(studentId) {
     window.location.href = `student_edit.php?id=${studentId}`;
 }
