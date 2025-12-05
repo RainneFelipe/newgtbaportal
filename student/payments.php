@@ -120,6 +120,105 @@ if (!$student_info) {
     }
 }
 
+// Determine next payment details based on payment history and preference
+$next_payment = null;
+if ($preferred_term_id && !empty($payment_terms)) {
+    // Find the preferred payment term
+    $selected_term = null;
+    foreach ($payment_terms as $term) {
+        if ($term['id'] == $preferred_term_id) {
+            $selected_term = $term;
+            break;
+        }
+    }
+    
+    if ($selected_term) {
+        // Check existing verified payments for this term
+        $history_query = "SELECT payment_type, installment_number, verification_status
+                         FROM student_payments
+                         WHERE student_id = :student_id
+                           AND payment_term_id = :payment_term_id
+                         ORDER BY 
+                           CASE payment_type
+                             WHEN 'down_payment' THEN 1
+                             WHEN 'monthly_installment' THEN 2
+                             WHEN 'full_payment' THEN 3
+                             ELSE 4
+                           END,
+                           installment_number ASC";
+        
+        $history_stmt = $db->prepare($history_query);
+        $history_stmt->bindParam(':student_id', $student_info['id']);
+        $history_stmt->bindParam(':payment_term_id', $preferred_term_id);
+        $history_stmt->execute();
+        $payment_history = $history_stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Determine next payment based on preference and history
+        $has_verified_down_payment = false;
+        $highest_verified_installment = 0;
+        $has_pending_payment = false;
+        
+        foreach ($payment_history as $payment) {
+            if ($payment['payment_type'] === 'down_payment' && $payment['verification_status'] === 'verified') {
+                $has_verified_down_payment = true;
+            }
+            if ($payment['payment_type'] === 'monthly_installment' && $payment['verification_status'] === 'verified') {
+                $highest_verified_installment = max($highest_verified_installment, $payment['installment_number']);
+            }
+            if ($payment['verification_status'] === 'pending') {
+                $has_pending_payment = true;
+            }
+        }
+        
+        // Only auto-fill if no pending payments
+        if (!$has_pending_payment) {
+            // Check if student chose installment plan
+            if ($selected_term['term_type'] === 'installment') {
+                // Installment plan logic
+                if (!$has_verified_down_payment) {
+                    // Next payment is down payment
+                    $next_payment = [
+                        'type' => 'down_payment',
+                        'type_label' => 'Down Payment',
+                        'installment_number' => null,
+                        'amount' => $selected_term['down_payment_amount']
+                    ];
+                } else {
+                    // Down payment verified, determine next installment
+                    $next_installment = $highest_verified_installment + 1;
+                    
+                    if ($next_installment <= $selected_term['number_of_installments']) {
+                        $next_payment = [
+                            'type' => 'monthly_installment',
+                            'type_label' => 'Monthly Installment ' . $next_installment,
+                            'installment_number' => $next_installment,
+                            'amount' => $selected_term['monthly_fee_amount']
+                        ];
+                    }
+                }
+            } else if ($selected_term['term_type'] === 'full_payment') {
+                // Full payment - check if not already paid
+                $has_full_payment = false;
+                foreach ($payment_history as $payment) {
+                    if ($payment['payment_type'] === 'full_payment' && $payment['verification_status'] === 'verified') {
+                        $has_full_payment = true;
+                        break;
+                    }
+                }
+                
+                if (!$has_full_payment) {
+                    $next_payment = [
+                        'type' => 'full_payment',
+                        'type_label' => 'Full Payment',
+                        'installment_number' => null,
+                        'amount' => $selected_term['full_tuition_amount']
+                    ];
+                }
+            }
+        }
+    }
+}
+
 // Handle form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_payment'])) {
     try {
@@ -296,7 +395,109 @@ ob_start();
     </div>
 <?php endif; ?>
 
-<?php if (!empty($payment_terms)): ?>
+<?php if ($next_payment && $balance_info): ?>
+    <!-- Payment Progress Indicator -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; color: white;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+            <h4 style="color: white; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fas fa-clipboard-check"></i> Your Payment Progress
+            </h4>
+            <span style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+                Next: <?php echo htmlspecialchars($next_payment['type_label']); ?>
+            </span>
+        </div>
+        
+        <div style="background: rgba(255,255,255,0.1); border-radius: 10px; padding: 1rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <?php 
+                // Show down payment status
+                $down_payment_verified = false;
+                foreach ($balance_info['payments_breakdown'] as $payment) {
+                    if ($payment['payment_type'] === 'down_payment' && $payment['verification_status'] === 'verified') {
+                        $down_payment_verified = true;
+                        break;
+                    }
+                }
+                ?>
+                <div style="flex: 0 0 auto; padding: 0.75rem 1rem; background: <?php echo $down_payment_verified ? '#4CAF50' : 'rgba(255,255,255,0.2)'; ?>; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas <?php echo $down_payment_verified ? 'fa-check-circle' : 'fa-circle'; ?>"></i>
+                    <span style="font-size: 0.9rem;">Down Payment</span>
+                </div>
+                
+                <?php 
+                // Show installment statuses
+                if ($balance_info['number_of_installments'] > 0):
+                    for ($i = 1; $i <= $balance_info['number_of_installments']; $i++):
+                        $installment_verified = false;
+                        foreach ($balance_info['payments_breakdown'] as $payment) {
+                            if ($payment['payment_type'] === 'monthly_installment' && 
+                                $payment['installment_number'] == $i && 
+                                $payment['verification_status'] === 'verified') {
+                                $installment_verified = true;
+                                break;
+                            }
+                        }
+                ?>
+                    <div style="flex: 0 0 auto; padding: 0.75rem 1rem; background: <?php echo $installment_verified ? '#4CAF50' : 'rgba(255,255,255,0.2)'; ?>; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas <?php echo $installment_verified ? 'fa-check-circle' : 'fa-circle'; ?>"></i>
+                        <span style="font-size: 0.9rem;">Installment <?php echo $i; ?></span>
+                    </div>
+                <?php 
+                    endfor;
+                endif;
+                ?>
+            </div>
+            
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.85rem; opacity: 0.9;">Remaining Balance</div>
+                    <div style="font-size: 1.4rem; font-weight: 700;">₱<?php echo number_format($balance_info['remaining_balance'], 2); ?></div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.85rem; opacity: 0.9;">Next Payment Amount</div>
+                    <div style="font-size: 1.4rem; font-weight: 700; color: #FFD700;">₱<?php echo number_format($next_payment['amount'], 2); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php 
+// Check if there's a pending payment
+$has_pending_payment = false;
+if (isset($payment_history) && !empty($payment_history)) {
+    foreach ($payment_history as $p) {
+        if ($p['verification_status'] === 'pending') {
+            $has_pending_payment = true;
+            break;
+        }
+    }
+}
+
+// Display message if all payments are completed
+if (!$next_payment && $balance_info && $balance_info['remaining_balance'] <= 0): ?>
+    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <h3 style="color: white; margin: 0 0 0.5rem 0;">Payment Fully Completed!</h3>
+        <p style="margin: 0; font-size: 1.1rem; opacity: 0.95;">
+            All payments for this term have been verified. Thank you for your payment!
+        </p>
+    </div>
+<?php elseif ($has_pending_payment): ?>
+    <div style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); border-radius: 15px; padding: 2rem; margin-bottom: 2rem; color: white; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">
+            <i class="fas fa-clock"></i>
+        </div>
+        <h3 style="color: white; margin: 0 0 0.5rem 0;">Payment Verification Pending</h3>
+        <p style="margin: 0; font-size: 1.1rem; opacity: 0.95;">
+            You have a payment awaiting verification by the Finance Office. Please wait for approval before submitting the next payment.
+        </p>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($payment_terms) && ($next_payment || !$has_pending_payment)): ?>
     <!-- Two Column Layout: Payment Form + Balance Sidebar -->
     <div style="display: grid; grid-template-columns: 1fr 400px; gap: 2rem; align-items: start; margin-bottom: 2rem;">
         <!-- Left Column: Payment Form -->
@@ -307,52 +508,119 @@ ob_start();
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Term *</label>
-                    <select name="payment_term_id" id="payment_term_id" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
-                        <option value="">Select Payment Term</option>
-                        <?php foreach ($payment_terms as $term): ?>
-                            <option value="<?php echo $term['id']; ?>" 
-                                    data-type="<?php echo $term['term_type']; ?>"
-                                    data-down-payment="<?php echo $term['down_payment_amount'] ?? 0; ?>"
-                                    data-monthly-fee="<?php echo $term['monthly_fee_amount'] ?? 0; ?>"
-                                    data-installments="<?php echo $term['number_of_installments'] ?? 0; ?>"
-                                    data-full-amount="<?php echo $term['full_payment_amount'] ?? 0; ?>"
-                                    <?php 
-                                    // Auto-select preferred payment term, otherwise default term
-                                    if ($preferred_term_id && $term['id'] == $preferred_term_id) {
-                                        echo 'selected';
-                                    } elseif (!$preferred_term_id && $term['is_default']) {
-                                        echo 'selected';
-                                    }
-                                    ?>>
-                                <?php echo htmlspecialchars($term['term_name']); ?> 
-                                (<?php echo ucfirst(str_replace('_', ' ', $term['term_type'])); ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <?php if ($preferred_term_id && $next_payment): ?>
+                        <!-- Locked to preferred payment term -->
+                        <?php 
+                        $selected_term_name = '';
+                        $selected_term_type = '';
+                        foreach ($payment_terms as $term) {
+                            if ($term['id'] == $preferred_term_id) {
+                                $selected_term_name = $term['term_name'];
+                                $selected_term_type = $term['term_type'];
+                                break;
+                            }
+                        }
+                        ?>
+                        <input type="text" 
+                               value="<?php echo htmlspecialchars($selected_term_name); ?> (<?php echo ucfirst(str_replace('_', ' ', $selected_term_type)); ?>)" 
+                               readonly
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px; background-color: #f5f5f5; cursor: not-allowed;">
+                        <input type="hidden" name="payment_term_id" value="<?php echo htmlspecialchars($preferred_term_id); ?>">
+                        <small style="color: var(--primary-blue); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                            <i class="fas fa-info-circle"></i> Locked to your selected payment preference
+                        </small>
+                    <?php else: ?>
+                        <select name="payment_term_id" id="payment_term_id" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
+                            <option value="">Select Payment Term</option>
+                            <?php foreach ($payment_terms as $term): ?>
+                                <option value="<?php echo $term['id']; ?>" 
+                                        data-type="<?php echo $term['term_type']; ?>"
+                                        data-down-payment="<?php echo $term['down_payment_amount'] ?? 0; ?>"
+                                        data-monthly-fee="<?php echo $term['monthly_fee_amount'] ?? 0; ?>"
+                                        data-installments="<?php echo $term['number_of_installments'] ?? 0; ?>"
+                                        data-full-amount="<?php echo $term['full_payment_amount'] ?? 0; ?>"
+                                        <?php 
+                                        // Auto-select preferred payment term, otherwise default term
+                                        if ($preferred_term_id && $term['id'] == $preferred_term_id) {
+                                            echo 'selected';
+                                        } elseif (!$preferred_term_id && $term['is_default']) {
+                                            echo 'selected';
+                                        }
+                                        ?>>
+                                    <?php echo htmlspecialchars($term['term_name']); ?> 
+                                    (<?php echo ucfirst(str_replace('_', ' ', $term['term_type'])); ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php endif; ?>
                 </div>
 
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Type *</label>
-                    <select name="payment_type" id="payment_type" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
-                        <option value="">Select Payment Type</option>
-                        <option value="full_payment">Full Payment</option>
-                        <option value="down_payment">Down Payment</option>
-                        <option value="monthly_installment">Monthly Installment</option>
-                    </select>
-                    <small id="installment_info" style="color: var(--gray); font-size: 0.9rem; display: none;"></small>
+                    <?php if ($next_payment): ?>
+                        <!-- Auto-filled and locked based on payment history -->
+                        <input type="text" 
+                               value="<?php echo htmlspecialchars($next_payment['type_label']); ?>" 
+                               readonly
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px; background-color: #f5f5f5; cursor: not-allowed;">
+                        <input type="hidden" name="payment_type" value="<?php echo htmlspecialchars($next_payment['type']); ?>">
+                        <small style="color: var(--primary-blue); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                            <i class="fas fa-info-circle"></i> Auto-determined based on your payment progress
+                        </small>
+                    <?php else: ?>
+                        <select name="payment_type" id="payment_type" required style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
+                            <option value="">Select Payment Type</option>
+                            <option value="full_payment">Full Payment</option>
+                            <option value="down_payment">Down Payment</option>
+                            <option value="monthly_installment">Monthly Installment</option>
+                        </select>
+                        <small id="installment_info" style="color: var(--gray); font-size: 0.9rem; display: none;"></small>
+                        <?php if (isset($payment_history) && !empty($payment_history)): ?>
+                            <?php 
+                            $has_pending = false;
+                            foreach ($payment_history as $p) {
+                                if ($p['verification_status'] === 'pending') {
+                                    $has_pending = true;
+                                    break;
+                                }
+                            }
+                            if ($has_pending): ?>
+                                <small style="color: orange; font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                                    <i class="fas fa-exclamation-triangle"></i> You have a pending payment awaiting verification
+                                </small>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
 
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Amount Paid *</label>
-                    <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0" required 
-                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
-                    <small id="amount_hint" style="color: var(--gray); font-size: 0.9rem;"></small>
+                    <?php if ($next_payment): ?>
+                        <!-- Auto-filled and locked based on payment schedule -->
+                        <input type="text" 
+                               value="₱<?php echo number_format($next_payment['amount'], 2); ?>" 
+                               readonly
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px; background-color: #f5f5f5; cursor: not-allowed; font-weight: 600; color: var(--dark-blue);">
+                        <input type="hidden" name="amount_paid" value="<?php echo htmlspecialchars($next_payment['amount']); ?>">
+                        <small style="color: var(--primary-blue); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                            <i class="fas fa-info-circle"></i> Amount set by payment schedule
+                        </small>
+                    <?php else: ?>
+                        <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0" required 
+                               style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
+                        <small id="amount_hint" style="color: var(--gray); font-size: 0.9rem;"></small>
+                    <?php endif; ?>
                 </div>
 
                 <div>
                     <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Payment Date *</label>
-                    <input type="date" name="payment_date" required max="<?php echo date('Y-m-d'); ?>"
+                    <input type="date" name="payment_date" required 
+                           value="<?php echo date('Y-m-d'); ?>"
+                           max="<?php echo date('Y-m-d'); ?>"
                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px;">
+                    <small style="color: var(--gray); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                        Date when payment was made
+                    </small>
                 </div>
 
                 <div>
@@ -572,6 +840,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const amountPaidInput = document.getElementById('amount_paid');
     const amountHint = document.getElementById('amount_hint');
 
+    // Only run interactive code if elements exist (not locked/readonly)
+    if (!paymentTermSelect || !paymentTypeSelect || !amountPaidInput) {
+        return; // Fields are locked, no need for interactive updates
+    }
+
     function updatePaymentOptions() {
         const selectedTerm = paymentTermSelect.options[paymentTermSelect.selectedIndex];
         const termType = selectedTerm.dataset.type;
@@ -595,8 +868,8 @@ document.addEventListener('DOMContentLoaded', function() {
     async function updateInstallmentInfo() {
         const paymentTermId = paymentTermSelect.value;
         
-        if (!paymentTermId) {
-            installmentInfo.style.display = 'none';
+        if (!paymentTermId || !installmentInfo) {
+            if (installmentInfo) installmentInfo.style.display = 'none';
             return;
         }
         
@@ -635,23 +908,23 @@ document.addEventListener('DOMContentLoaded', function() {
             updateInstallmentInfo();
         }
         
-        amountHint.textContent = hint;
-        if (suggestedAmount > 0) {
+        if (amountHint) amountHint.textContent = hint;
+        if (suggestedAmount > 0 && amountPaidInput) {
             amountPaidInput.value = suggestedAmount.toFixed(2);
         }
     }
 
     paymentTermSelect.addEventListener('change', function() {
         updatePaymentOptions();
-        installmentInfo.style.display = 'none';
-        amountPaidInput.value = '';
+        if (installmentInfo) installmentInfo.style.display = 'none';
+        if (amountPaidInput) amountPaidInput.value = '';
     });
 
     paymentTypeSelect.addEventListener('change', function() {
         if (this.value === 'monthly_installment') {
             updateInstallmentInfo();
         } else {
-            installmentInfo.style.display = 'none';
+            if (installmentInfo) installmentInfo.style.display = 'none';
         }
         updateAmountHint();
     });
