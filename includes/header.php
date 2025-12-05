@@ -348,6 +348,12 @@ if (isset($_SESSION['user_id'])) {
                             <span>Manage Users</span>
                         </a>
                     </li>
+                    <li class="menu-item">
+                        <a href="<?php echo $base_url ?? '../'; ?>admin/archived_users.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'archived_users.php') ? 'active' : ''; ?>">
+                            <i class="fas fa-archive"></i>
+                            <span>Archived Users</span>
+                        </a>
+                    </li>
                     <li class="menu-section">
                         <span class="section-title">Academic Management</span>
                     </li>

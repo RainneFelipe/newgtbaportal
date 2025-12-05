@@ -17,6 +17,8 @@ This database schema supports a comprehensive school portal system with role-bas
 
 ### Admin Features
 - Manage all user accounts
+- Archive users instead of permanent deletion
+- View and restore archived users
 - View audit logs
 - Create accounts for any role
 - School year management

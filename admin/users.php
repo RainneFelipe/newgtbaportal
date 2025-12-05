@@ -97,6 +97,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $messageType = 'error';
                 }
                 break;
+                
+            case 'archive':
+                // Archive user
+                try {
+                    $stmt = $conn->prepare("UPDATE users SET archived_at = NOW(), is_active = 0 WHERE id = ?");
+                    $stmt->execute([$_POST['user_id']]);
+                    
+                    // Get username for logging
+                    $stmt = $conn->prepare("SELECT username FROM users WHERE id = ?");
+                    $stmt->execute([$_POST['user_id']]);
+                    $username = $stmt->fetchColumn();
+                    
+                    // Log the action
+                    $user->logAudit($_SESSION['user_id'], 'User Archived: ' . $username, 'users', $_POST['user_id']);
+                    
+                    $message = 'User archived successfully!';
+                    $messageType = 'success';
+                } catch (PDOException $e) {
+                    $message = 'Error archiving user: ' . $e->getMessage();
+                    $messageType = 'error';
+                }
+                break;
         }
     }
 }
@@ -112,6 +134,9 @@ $status_filter = $_GET['status'] ?? '';
 
 $where_conditions = [];
 $params = [];
+
+// Always exclude archived users
+$where_conditions[] = "u.archived_at IS NULL";
 
 if (!empty($search)) {
     $where_conditions[] = "(u.username LIKE ? OR u.email LIKE ?)";
@@ -159,6 +184,7 @@ ob_start();
 <div class="admin-header">
     <h1>User Management</h1>
     <p class="subtitle">Manage all user accounts across all roles</p>
+    <a href="archived_users.php" class="btn btn-secondary" style="margin-top: 1rem;">📦 View Archived Users</a>
 </div>
 
 <?php if ($message): ?>
@@ -295,6 +321,13 @@ ob_start();
                                         <input type="hidden" name="action" value="reset_password">
                                         <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-warning" title="Reset Password">🔑</button>
+                                    </form>
+                                    
+                                    <!-- Archive User -->
+                                    <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to archive this user? They will be moved to archived users.')">
+                                        <input type="hidden" name="action" value="archive">
+                                        <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Archive User">🗄️</button>
                                     </form>
                                 </div>
                             </td>
@@ -477,6 +510,16 @@ ob_start();
 
 .btn-warning:hover {
     background-color: #e0a800;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
 }
 
 .pagination {
