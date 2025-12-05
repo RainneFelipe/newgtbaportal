@@ -17,7 +17,7 @@ $database = new Database();
 $conn = $database->connect();
 $user = new User($conn);
 
-$page_title = "Student Promotion & Re-enrollment";
+$page_title = "Prevent Auto-Promotion - GTBA Portal";
 $base_url = "../";
 
 $message = '';
@@ -28,66 +28,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if (isset($_POST['action'])) {
             switch ($_POST['action']) {
-                case 'bulk_promote':
+                case 'prevent_promotion':
                     $current_year_id = $_POST['current_year_id'];
-                    $new_year_id = $_POST['new_year_id'];
-                    $selected_students = $_POST['selected_students'] ?? [];
+                    $excluded_students = $_POST['excluded_students'] ?? [];
                     
-                    if (empty($selected_students)) {
-                        throw new Exception("Please select at least one student to promote.");
-                    }
-                    
-                    if (empty($new_year_id)) {
-                        throw new Exception("Please select a target school year for promotion.");
+                    if (empty($excluded_students)) {
+                        throw new Exception("No students selected to prevent promotion.");
                     }
                     
                     $conn->beginTransaction();
                     
-                    $promoted_count = 0;
-                    $promotion_details = [];
+                    $prevented_count = 0;
+                    $prevention_details = [];
                     
-                    foreach ($selected_students as $student_data) {
-                        list($student_id, $current_grade_id, $new_grade_id) = explode('|', $student_data);
-                        
+                    foreach ($excluded_students as $student_id) {
                         // Get student name for logging
                         $student_name_query = "SELECT CONCAT(first_name, ' ', last_name) as full_name FROM students WHERE id = ?";
                         $student_name_stmt = $conn->prepare($student_name_query);
                         $student_name_stmt->execute([$student_id]);
                         $student_name = $student_name_stmt->fetchColumn();
                         
-                        // Update student's current information
+                        // Set prevent_auto_promotion flag
                         $update_query = "UPDATE students SET 
-                                        current_grade_level_id = ?,
-                                        current_school_year_id = ?,
-                                        current_section_id = NULL,
-                                        student_type = 'Continuing',
-                                        enrollment_status = 'Enrolled',
+                                        prevent_auto_promotion = 1,
                                         updated_at = NOW()
                                         WHERE id = ?";
                         $update_stmt = $conn->prepare($update_query);
-                        $update_stmt->execute([$new_grade_id, $new_year_id, $student_id]);
+                        $update_stmt->execute([$student_id]);
                         
-                        // Create new enrollment record for the new school year
-                        $enrollment_query = "INSERT INTO student_enrollments 
-                                           (student_id, school_year_id, grade_level_id, section_id, 
-                                            enrollment_date, enrollment_status, created_by)
-                                           VALUES (?, ?, ?, NULL, CURDATE(), 'Enrolled', ?)";
-                        $enrollment_stmt = $conn->prepare($enrollment_query);
-                        $enrollment_stmt->execute([$student_id, $new_year_id, $new_grade_id, $_SESSION['user_id']]);
-                        
-                        $promotion_details[] = $student_name;
-                        $promoted_count++;
+                        $prevention_details[] = $student_name;
+                        $prevented_count++;
                     }
                     
                     // Audit log
                     try {
                         $audit_query = "INSERT INTO audit_logs (user_id, action, table_name, record_id, details, ip_address) 
-                                       VALUES (?, 'bulk_promote', 'students', NULL, ?, ?)";
+                                       VALUES (?, 'prevent_auto_promotion', 'students', NULL, ?, ?)";
                         $audit_stmt = $conn->prepare($audit_query);
                         $audit_details = json_encode([
-                            'promoted_count' => $promoted_count,
-                            'target_year_id' => $new_year_id,
-                            'students' => $promotion_details
+                            'prevented_count' => $prevented_count,
+                            'students' => $prevention_details
                         ]);
                         $audit_stmt->execute([$_SESSION['user_id'], $audit_details, $_SERVER['REMOTE_ADDR']]);
                     } catch (Exception $audit_e) {
@@ -95,40 +75,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     $conn->commit();
-                    $message = "Successfully promoted {$promoted_count} student(s) to the new school year!";
+                    $message = "Successfully prevented auto-promotion for {$prevented_count} student(s). They will not be automatically promoted.";
                     $messageType = 'success';
                     break;
                     
-                case 'individual_promote':
+                case 'individual_prevent':
                     $student_id = $_POST['student_id'];
-                    $new_grade_id = $_POST['new_grade_id'];
-                    $new_year_id = $_POST['new_year_id'];
-                    $new_section_id = $_POST['new_section_id'] ?? null;
                     
                     $conn->beginTransaction();
                     
-                    // Update student's current information
+                    // Set prevent_auto_promotion flag
                     $update_query = "UPDATE students SET 
-                                    current_grade_level_id = ?,
-                                    current_school_year_id = ?,
-                                    current_section_id = ?,
-                                    student_type = 'Continuing',
-                                    enrollment_status = 'Enrolled',
+                                    prevent_auto_promotion = 1,
                                     updated_at = NOW()
                                     WHERE id = ?";
                     $update_stmt = $conn->prepare($update_query);
-                    $update_stmt->execute([$new_grade_id, $new_year_id, $new_section_id, $student_id]);
-                    
-                    // Create new enrollment record
-                    $enrollment_query = "INSERT INTO student_enrollments 
-                                       (student_id, school_year_id, grade_level_id, section_id, 
-                                        enrollment_date, enrollment_status, created_by)
-                                       VALUES (?, ?, ?, ?, CURDATE(), 'Enrolled', ?)";
-                    $enrollment_stmt = $conn->prepare($enrollment_query);
-                    $enrollment_stmt->execute([$student_id, $new_year_id, $new_grade_id, $new_section_id, $_SESSION['user_id']]);
+                    $update_stmt->execute([$student_id]);
                     
                     $conn->commit();
-                    $message = "Student promoted successfully!";
+                    $message = "Student auto-promotion prevented successfully!";
                     $messageType = 'success';
                     break;
             }
@@ -164,13 +129,19 @@ try {
     $grades_stmt->execute();
     $grade_levels = $grades_stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get students from previous year that need promotion
+    // Get students eligible for auto-promotion
+    // Criteria: All grades >= 75 AND enrollment_status = 'Enrolled'
     $promotion_filter = $_GET['promotion_year'] ?? '';
     $grade_filter = $_GET['grade_filter'] ?? '';
     
     $students = [];
     if ($promotion_filter) {
-        $where_conditions = ["s.enrollment_status = 'Enrolled'", "s.current_school_year_id = ?"];
+        $where_conditions = [
+            "s.enrollment_status = 'Enrolled'", 
+            "s.current_school_year_id = ?",
+            "s.is_active = 1",
+            "(s.prevent_auto_promotion IS NULL OR s.prevent_auto_promotion = 0)"
+        ];
         $params = [$promotion_filter];
         
         if ($grade_filter) {
@@ -178,16 +149,25 @@ try {
             $params[] = $grade_filter;
         }
         
-        $students_query = "SELECT s.*, 
+        // Get students with all passing grades
+        $students_query = "SELECT DISTINCT s.*, 
                           CONCAT(s.first_name, ' ', IFNULL(CONCAT(s.middle_name, ' '), ''), s.last_name) as full_name,
                           gl.grade_name, gl.grade_order, gl.id as current_grade_id,
                           sy.year_label,
-                          sec.section_name
+                          sec.section_name,
+                          (SELECT COUNT(*) FROM student_grades sg 
+                           WHERE sg.student_id = s.id 
+                           AND sg.school_year_id = s.current_school_year_id) as total_grades,
+                          (SELECT COUNT(*) FROM student_grades sg 
+                           WHERE sg.student_id = s.id 
+                           AND sg.school_year_id = s.current_school_year_id
+                           AND sg.final_grade >= 75) as passing_grades
                           FROM students s
                           LEFT JOIN grade_levels gl ON s.current_grade_level_id = gl.id
                           LEFT JOIN school_years sy ON s.current_school_year_id = sy.id
                           LEFT JOIN sections sec ON s.current_section_id = sec.id
                           WHERE " . implode(' AND ', $where_conditions) . "
+                          HAVING total_grades > 0 AND total_grades = passing_grades
                           ORDER BY gl.grade_order, s.last_name, s.first_name";
         
         $students_stmt = $conn->prepare($students_query);
@@ -195,21 +175,83 @@ try {
         $students = $students_stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
-    // Get promotion statistics
+    // Get auto-promotion eligible statistics
     $stats = [];
     if ($promotion_filter) {
         $stats_query = "SELECT 
                         gl.grade_name,
-                        COUNT(s.id) as student_count
+                        COUNT(DISTINCT s.id) as student_count
                         FROM students s
                         JOIN grade_levels gl ON s.current_grade_level_id = gl.id
                         WHERE s.enrollment_status = 'Enrolled' 
                         AND s.current_school_year_id = ?
+                        AND s.is_active = 1
+                        AND (s.prevent_auto_promotion IS NULL OR s.prevent_auto_promotion = 0)
+                        AND (SELECT COUNT(*) FROM student_grades sg 
+                             WHERE sg.student_id = s.id 
+                             AND sg.school_year_id = s.current_school_year_id) > 0
+                        AND (SELECT COUNT(*) FROM student_grades sg 
+                             WHERE sg.student_id = s.id 
+                             AND sg.school_year_id = s.current_school_year_id) =
+                            (SELECT COUNT(*) FROM student_grades sg 
+                             WHERE sg.student_id = s.id 
+                             AND sg.school_year_id = s.current_school_year_id
+                             AND sg.final_grade >= 75)
                         GROUP BY gl.id, gl.grade_name
                         ORDER BY gl.grade_order";
         $stats_stmt = $conn->prepare($stats_query);
         $stats_stmt->execute([$promotion_filter]);
         $stats = $stats_stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Get ineligible students (failing grades or not enrolled)
+    $ineligible_students = [];
+    if ($promotion_filter) {
+        $ineligible_query = "SELECT DISTINCT s.*, 
+                          CONCAT(s.first_name, ' ', IFNULL(CONCAT(s.middle_name, ' '), ''), s.last_name) as full_name,
+                          gl.grade_name, gl.grade_order, gl.id as current_grade_id,
+                          sy.year_label,
+                          sec.section_name,
+                          (SELECT COUNT(*) FROM student_grades sg 
+                           WHERE sg.student_id = s.id 
+                           AND sg.school_year_id = s.current_school_year_id) as total_grades,
+                          (SELECT COUNT(*) FROM student_grades sg 
+                           WHERE sg.student_id = s.id 
+                           AND sg.school_year_id = s.current_school_year_id
+                           AND sg.final_grade >= 75) as passing_grades,
+                          (SELECT COUNT(*) FROM student_grades sg 
+                           WHERE sg.student_id = s.id 
+                           AND sg.school_year_id = s.current_school_year_id
+                           AND sg.final_grade < 75) as failing_grades
+                          FROM students s
+                          LEFT JOIN grade_levels gl ON s.current_grade_level_id = gl.id
+                          LEFT JOIN school_years sy ON s.current_school_year_id = sy.id
+                          LEFT JOIN sections sec ON s.current_section_id = sec.id
+                          WHERE s.current_school_year_id = ?
+                          AND s.is_active = 1
+                          AND (
+                              s.enrollment_status != 'Enrolled'
+                              OR s.prevent_auto_promotion = 1
+                              OR (SELECT COUNT(*) FROM student_grades sg 
+                                  WHERE sg.student_id = s.id 
+                                  AND sg.school_year_id = s.current_school_year_id
+                                  AND sg.final_grade < 75) > 0
+                          )
+                          ORDER BY gl.grade_order, s.last_name, s.first_name";
+        
+        $params_ineligible = [$promotion_filter];
+        if ($grade_filter) {
+            $ineligible_query = str_replace(
+                "ORDER BY", 
+                "AND s.current_grade_level_id = ? ORDER BY", 
+                $ineligible_query
+            );
+            $params_ineligible[] = $grade_filter;
+        }
+        
+        $ineligible_stmt = $conn->prepare($ineligible_query);
+        $ineligible_stmt->execute($params_ineligible);
+        $ineligible_students = $ineligible_stmt->fetchAll(PDO::FETCH_ASSOC);
     }
     
 } catch (Exception $e) {
@@ -230,8 +272,8 @@ include '../includes/header.php';
                 </div>
             </div>
             <div class="hero-text">
-                <h1>Student Promotion & Re-enrollment</h1>
-                <p>Re-enroll students to the next academic year</p>
+                <h1>Prevent Auto-Promotion</h1>
+                <p>Select students who should NOT be automatically promoted despite passing grades</p>
                 <?php if ($current_year): ?>
                     <div class="active-year">
                         <i class="fas fa-calendar-check"></i>
@@ -276,8 +318,8 @@ include '../includes/header.php';
             <div class="step-header">
                 <div class="step-number">1</div>
                 <div class="step-title">
-                    <h2>Select Students</h2>
-                    <p>Choose the school year and grade level to filter students</p>
+                    <h2>View Auto-Promotion Eligible Students</h2>
+                    <p>Students with all passing grades (≥75) and fully paid tuition will be automatically promoted</p>
                 </div>
             </div>
             
@@ -325,7 +367,7 @@ include '../includes/header.php';
                     
                     <?php if (!empty($stats)): ?>
                         <div class="grade-stats">
-                            <h4>Current Enrollment Summary</h4>
+                            <h4>Auto-Promotion Eligible Students</h4>
                             <div class="stats-grid">
                                 <?php foreach ($stats as $stat): ?>
                                     <div class="stat-card">
@@ -341,38 +383,30 @@ include '../includes/header.php';
         </div>
 
         <?php if (!empty($students)): ?>
-            <!-- Step 2: Promote Students -->
+            <!-- Step 2: Prevent Auto-Promotion -->
             <div class="promotion-step">
                 <div class="step-header">
                     <div class="step-number">2</div>
                     <div class="step-title">
-                        <h2>Promote Students</h2>
-                        <p>Select students and choose target school year for promotion</p>
+                        <h2>Prevent Auto-Promotion</h2>
+                        <p>Select students who should NOT be automatically promoted (unselected students will be auto-promoted)</p>
                     </div>
                 </div>
                 
                 <div class="step-content">
                     <form method="POST" id="promotionForm" class="promotion-form">
-                        <input type="hidden" name="action" value="bulk_promote">
+                        <input type="hidden" name="action" value="prevent_promotion">
                         <input type="hidden" name="current_year_id" value="<?php echo $promotion_filter; ?>">
                         
                         <!-- Promotion Controls -->
                         <div class="promotion-controls">
                             <div class="control-left">
-                                <div class="form-group">
-                                    <label for="new_year_id">
-                                        <i class="fas fa-calendar-plus"></i>
-                                        Promote to School Year
-                                    </label>
-                                    <select id="new_year_id" name="new_year_id" required class="modern-select">
-                                        <option value="">Select target year...</option>
-                                        <?php foreach ($school_years as $year): ?>
-                                            <option value="<?php echo $year['id']; ?>" <?php echo $year['is_active'] ? 'selected' : ''; ?>>
-                                                <?php echo htmlspecialchars($year['year_label']); ?>
-                                                <?php echo $year['is_active'] ? ' (Current)' : ''; ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                <div class="alert-info-box">
+                                    <i class="fas fa-info-circle"></i>
+                                    <div>
+                                        <strong>Auto-Promotion Active</strong>
+                                        <p>Students shown below will be automatically promoted when their grades are saved by teachers. Select students to prevent their promotion.</p>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -388,7 +422,7 @@ include '../includes/header.php';
                                     </button>
                                 </div>
                                 <div class="selected-info">
-                                    <span class="selected-count">0</span> students selected
+                                    <span class="selected-count">0</span> students will be prevented
                                 </div>
                             </div>
                         </div>
@@ -396,7 +430,7 @@ include '../includes/header.php';
                         <!-- Students Cards -->
                         <div class="students-container">
                             <div class="students-header">
-                                <h3>Students Available for Promotion</h3>
+                                <h3>Students Eligible for Auto-Promotion</h3>
                                 <span class="total-count"><?php echo count($students); ?> students found</span>
                             </div>
                             
@@ -417,16 +451,14 @@ include '../includes/header.php';
                                     <div class="student-card <?php echo $next_grade ? 'promotable' : 'graduating'; ?>" 
                                          data-student-id="<?php echo $student['id']; ?>">
                                         
-                                        <?php if ($next_grade): ?>
-                                            <div class="card-checkbox">
-                                                <input type="checkbox" 
-                                                       id="student_<?php echo $student['id']; ?>"
-                                                       name="selected_students[]" 
-                                                       value="<?php echo $student['id'] . '|' . $student['current_grade_id'] . '|' . $next_grade['id']; ?>"
-                                                       class="student-checkbox">
-                                                <label for="student_<?php echo $student['id']; ?>"></label>
-                                            </div>
-                                        <?php endif; ?>
+                                        <div class="card-checkbox">
+                                            <input type="checkbox" 
+                                                   id="student_<?php echo $student['id']; ?>"
+                                                   name="excluded_students[]" 
+                                                   value="<?php echo $student['id']; ?>"
+                                                   class="student-checkbox">
+                                            <label for="student_<?php echo $student['id']; ?>"></label>
+                                        </div>
                                         
                                         <div class="card-content">
                                             <div class="student-info">
@@ -479,13 +511,13 @@ include '../includes/header.php';
                                         <div class="card-status">
                                             <?php if ($next_grade): ?>
                                                 <span class="status-badge ready">
-                                                    <i class="fas fa-check"></i>
-                                                    Ready for Promotion
+                                                    <i class="fas fa-robot"></i>
+                                                    Will Auto-Promote to <?php echo htmlspecialchars($next_grade['grade_name']); ?>
                                                 </span>
                                             <?php else: ?>
                                                 <span class="status-badge graduating">
                                                     <i class="fas fa-graduation-cap"></i>
-                                                    Graduating Student
+                                                    Will Graduate
                                                 </span>
                                             <?php endif; ?>
                                         </div>
@@ -497,13 +529,117 @@ include '../includes/header.php';
                         <!-- Promotion Action -->
                         <div class="promotion-action">
                             <button type="submit" class="promote-btn" disabled>
-                                <i class="fas fa-graduation-cap"></i>
-                                <span>Promote Selected Students</span>
+                                <i class="fas fa-ban"></i>
+                                <span>Prevent Auto-Promotion for Selected Students</span>
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+
+        <?php endif; ?>
+
+        <?php if (!empty($ineligible_students) && $promotion_filter): ?>
+            <!-- Ineligible Students Section -->
+            <div class="promotion-step">
+                <div class="step-header">
+                    <div class="step-number">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="step-title">
+                        <h2>Ineligible for Auto-Promotion</h2>
+                        <p>Students who cannot be automatically promoted due to failing grades, unpaid tuition, or manual prevention</p>
+                    </div>
+                </div>
+                
+                <div class="step-content">
+                    <div class="students-container">
+                        <div class="students-header">
+                            <h3>Ineligible Students</h3>
+                            <span class="total-count"><?php echo count($ineligible_students); ?> students</span>
+                        </div>
+                        
+                        <div class="students-grid">
+                            <?php foreach ($ineligible_students as $student): ?>
+                                <?php
+                                // Determine reason for ineligibility
+                                $reasons = [];
+                                if ($student['enrollment_status'] != 'Enrolled') {
+                                    $reasons[] = 'Not Enrolled (' . $student['enrollment_status'] . ')';
+                                }
+                                if ($student['prevent_auto_promotion'] == 1) {
+                                    $reasons[] = 'Manually Prevented';
+                                }
+                                if ($student['failing_grades'] > 0) {
+                                    $reasons[] = $student['failing_grades'] . ' Failing Grade' . ($student['failing_grades'] > 1 ? 's' : '');
+                                }
+                                if ($student['total_grades'] == 0) {
+                                    $reasons[] = 'No Grades Recorded';
+                                }
+                                ?>
+                                <div class="student-card ineligible-card">
+                                    <div class="card-content">
+                                        <div class="student-info">
+                                            <div class="student-avatar ineligible-avatar">
+                                                <i class="fas fa-user-times"></i>
+                                            </div>
+                                            <div class="student-details">
+                                                <h4 class="student-name"><?php echo htmlspecialchars($student['full_name']); ?></h4>
+                                                <div class="student-meta">
+                                                    <span class="meta-item">
+                                                        <i class="fas fa-id-card"></i>
+                                                        <?php echo htmlspecialchars($student['student_id']); ?>
+                                                    </span>
+                                                    <span class="meta-item">
+                                                        <i class="fas fa-layer-group"></i>
+                                                        <?php echo htmlspecialchars($student['grade_name']); ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="ineligible-reasons">
+                                            <strong>Reason(s):</strong>
+                                            <ul>
+                                                <?php foreach ($reasons as $reason): ?>
+                                                    <li><?php echo htmlspecialchars($reason); ?></li>
+                                                <?php endforeach; ?>
+                                            </ul>
+                                        </div>
+                                        
+                                        <?php if ($student['total_grades'] > 0): ?>
+                                            <div class="grade-summary">
+                                                <div class="grade-stat">
+                                                    <span class="stat-label">Total Subjects:</span>
+                                                    <span class="stat-value"><?php echo $student['total_grades']; ?></span>
+                                                </div>
+                                                <div class="grade-stat">
+                                                    <span class="stat-label">Passing:</span>
+                                                    <span class="stat-value passing"><?php echo $student['passing_grades']; ?></span>
+                                                </div>
+                                                <div class="grade-stat">
+                                                    <span class="stat-label">Failing:</span>
+                                                    <span class="stat-value failing"><?php echo $student['failing_grades']; ?></span>
+                                                </div>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    
+                                    <div class="card-status">
+                                        <span class="status-badge ineligible">
+                                            <i class="fas fa-times-circle"></i>
+                                            Cannot Auto-Promote
+                                        </span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!$promotion_filter): ?>
 
         <?php elseif ($promotion_filter): ?>
             <!-- No Students Found -->
@@ -511,8 +647,8 @@ include '../includes/header.php';
                 <div class="empty-icon">
                     <i class="fas fa-search"></i>
                 </div>
-                <h3>No Students Found</h3>
-                <p>No students found matching the selected criteria.</p>
+                <h3>No Students Eligible for Auto-Promotion</h3>
+                <p>No students found with all passing grades and fully paid tuition in the selected criteria.</p>
                 <div class="empty-actions">
                     <a href="student_promotion.php" class="btn-secondary">
                         <i class="fas fa-filter"></i>
@@ -528,14 +664,18 @@ include '../includes/header.php';
             <!-- Welcome State -->
             <div class="welcome-state">
                 <div class="welcome-icon">
-                    <i class="fas fa-graduation-cap"></i>
+                    <i class="fas fa-robot"></i>
                 </div>
-                <h3>Welcome to Student Promotion Center</h3>
-                <p>Select a school year and grade level from the filters above to begin promoting students.</p>
+                <h3>Auto-Promotion Management</h3>
+                <p>Select a school year and grade level to view students eligible for automatic promotion.</p>
                 <div class="welcome-features">
                     <div class="feature-item">
-                        <i class="fas fa-filter"></i>
-                        <span>Filter by year and grade</span>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Students with all passing grades (≥75)</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-money-check"></i>
+                        <span>Fully paid and verified tuition</span>
                     </div>
                     <div class="feature-item">
                         <i class="fas fa-users"></i>
@@ -776,6 +916,11 @@ include '../includes/header.php';
     font-size: 1.25rem;
     font-weight: 700;
     box-shadow: var(--shadow);
+    flex-shrink: 0;
+}
+
+.step-number i {
+    font-size: 1.125rem;
 }
 
 .step-title h2 {
@@ -908,6 +1053,36 @@ include '../includes/header.php';
     border: 1px solid var(--gray-200);
 }
 
+.alert-info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    border-radius: var(--border-radius);
+    color: #0d47a1;
+}
+
+.alert-info-box i {
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+    flex-shrink: 0;
+}
+
+.alert-info-box strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-size: 0.9375rem;
+}
+
+.alert-info-box p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #1565c0;
+}
+
 .control-left .form-group {
     display: flex;
     flex-direction: column;
@@ -1020,6 +1195,17 @@ include '../includes/header.php';
     background: rgba(245, 158, 11, 0.02);
 }
 
+.student-card.ineligible-card {
+    border-color: var(--danger);
+    background: rgba(239, 68, 68, 0.02);
+    cursor: default;
+}
+
+.student-card.ineligible-card:hover {
+    transform: none;
+    box-shadow: var(--shadow);
+}
+
 .card-checkbox {
     position: absolute;
     top: 1rem;
@@ -1049,6 +1235,10 @@ include '../includes/header.php';
     justify-content: center;
     color: var(--white);
     font-size: 1.25rem;
+}
+
+.student-avatar.ineligible-avatar {
+    background: linear-gradient(135deg, #fca5a5, var(--danger));
 }
 
 .student-details {
@@ -1164,6 +1354,83 @@ include '../includes/header.php';
 .status-badge.graduating {
     background: var(--warning);
     color: var(--white);
+}
+
+.status-badge.ineligible {
+    background: var(--danger);
+    color: var(--white);
+}
+
+/* Ineligible Students Styles */
+.ineligible-reasons {
+    background: var(--gray-50);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+}
+
+.ineligible-reasons strong {
+    display: block;
+    color: var(--danger);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.ineligible-reasons ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.ineligible-reasons li {
+    padding: 0.25rem 0;
+    color: var(--gray-700);
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ineligible-reasons li:before {
+    content: "•";
+    color: var(--danger);
+    font-weight: bold;
+}
+
+.grade-summary {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-50);
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+}
+
+.grade-stat {
+    flex: 1;
+    text-align: center;
+}
+
+.grade-stat .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--gray-600);
+    margin-bottom: 0.25rem;
+}
+
+.grade-stat .stat-value {
+    display: block;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.grade-stat .stat-value.passing {
+    color: var(--success);
+}
+
+.grade-stat .stat-value.failing {
+    color: var(--danger);
 }
 
 /* Promotion Action */
@@ -1477,21 +1744,20 @@ function updateSelectedCount() {
 function updatePromoteButtonState() {
     const promoteBtn = document.querySelector('.promote-btn');
     const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
-    const targetYear = document.getElementById('new_year_id')?.value;
     
     if (promoteBtn) {
-        const isEnabled = selectedCount > 0 && targetYear;
+        const isEnabled = selectedCount > 0;
         promoteBtn.disabled = !isEnabled;
         
         if (isEnabled) {
             promoteBtn.innerHTML = `
-                <i class="fas fa-graduation-cap"></i>
-                <span>Promote ${selectedCount} Student${selectedCount !== 1 ? 's' : ''}</span>
+                <i class="fas fa-ban"></i>
+                <span>Prevent Auto-Promotion for ${selectedCount} Student${selectedCount !== 1 ? 's' : ''}</span>
             `;
         } else {
             promoteBtn.innerHTML = `
-                <i class="fas fa-graduation-cap"></i>
-                <span>Select Students to Promote</span>
+                <i class="fas fa-ban"></i>
+                <span>Select Students to Prevent Promotion</span>
             `;
         }
     }
@@ -1499,49 +1765,35 @@ function updatePromoteButtonState() {
 
 function setupFormValidation() {
     const form = document.getElementById('promotionForm');
-    const targetYearSelect = document.getElementById('new_year_id');
-    
-    if (targetYearSelect) {
-        targetYearSelect.addEventListener('change', updatePromoteButtonState);
-    }
     
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const selectedCount = document.querySelectorAll('.student-checkbox:checked').length;
-            const targetYear = document.getElementById('new_year_id')?.value;
-            const targetYearText = document.getElementById('new_year_id')?.selectedOptions[0]?.text || '';
             
             if (selectedCount === 0) {
-                showNotification('Please select at least one student to promote.', 'error');
-                return false;
-            }
-            
-            if (!targetYear) {
-                showNotification('Please select a target school year for promotion.', 'error');
+                showNotification('Please select at least one student to prevent auto-promotion.', 'error');
                 return false;
             }
             
             // Enhanced confirmation dialog
             const confirmed = confirm(`
-Promotion Confirmation
+Prevent Auto-Promotion Confirmation
 
-Students to promote: ${selectedCount}
-Target school year: ${targetYearText}
+Students affected: ${selectedCount}
 
 This action will:
-• Update student grade levels
-• Create new enrollment records
-• Mark students as "Continuing"
-• Reset section assignments
+• Mark selected students to prevent automatic promotion
+• They will not be promoted when grades are saved by teachers
+• Their enrollment status will remain unchanged
 
 Are you sure you want to proceed?
             `.trim());
             
             if (confirmed) {
                 setLoadingState(true);
-                showNotification('Processing student promotions...', 'info');
+                showNotification('Processing...', 'info');
                 this.submit();
             }
         });

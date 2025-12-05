@@ -448,7 +448,7 @@ if (isset($_SESSION['user_id'])) {
                     <li class="menu-item">
                         <a href="<?php echo $base_url ?? '../'; ?>registrar/student_promotion.php" class="menu-link <?php echo (basename($_SERVER['PHP_SELF']) == 'student_promotion.php') ? 'active' : ''; ?>">
                             <i class="fas fa-graduation-cap"></i>
-                            <span>Student Promotion</span>
+                            <span>Prevent Auto-Promotion</span>
                         </a>
                     </li>
                     <li class="menu-item">

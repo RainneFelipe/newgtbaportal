@@ -415,7 +415,7 @@ try {
     $stmt->execute([$section_id, $section_id]);
     $enrolled_students = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get available students (same grade level, not enrolled in any section for this school year)
+    // Get available students (same grade level, not enrolled in any section for this school year, and fully paid/enrolled)
     $query = "SELECT st.id, st.student_id, st.lrn, st.first_name, st.last_name, st.middle_name,
               st.enrollment_status, gl.grade_name as grade_level
               FROM students st
@@ -423,6 +423,7 @@ try {
               WHERE st.current_grade_level_id = ? 
               AND st.current_section_id IS NULL
               AND st.is_active = 1
+              AND st.enrollment_status = 'Enrolled'
               ORDER BY st.last_name, st.first_name";
     $stmt = $db->prepare($query);
     $stmt->execute([$section['grade_level_id']]);
@@ -622,8 +623,6 @@ ob_start();
                                             <?php endif; ?>
                                         </div>
                                         <div class="teacher-meta">
-                                            <span><?php echo htmlspecialchars($teacher['specialization']); ?></span>
-                                            <span>•</span>
                                             <span><?php echo htmlspecialchars($teacher['email']); ?></span>
                                         </div>
                                         <div class="teacher-assigned">
@@ -765,10 +764,7 @@ ob_start();
                             <?php foreach ($available_teachers as $teacher): ?>
                                 <option value="<?php echo $teacher['id']; ?>" 
                                         data-is-primary-elsewhere="<?php echo $teacher['is_primary_elsewhere']; ?>">
-                                    <?php echo htmlspecialchars($teacher['first_name'] . ' ' . $teacher['last_name'] . ' - ' . $teacher['specialization']); ?>
-                                    <?php if ($teacher['is_primary_elsewhere']): ?>
-                                        (Primary adviser elsewhere)
-                                    <?php endif; ?>
+                                    <?php echo htmlspecialchars($teacher['first_name'] . ' ' . $teacher['last_name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -784,9 +780,6 @@ ob_start();
                         <span class="checkbox-custom"></span>
                         <span class="checkbox-text">Set as primary teacher for this section</span>
                     </label>
-                    <div id="primary-warning" class="form-help" style="display: none; color: var(--warning-dark, #856404); margin-top: 0.5rem;">
-                        ⚠️ This teacher is already a primary adviser in another section and cannot be set as primary here.
-                    </div>
                 </div>
                 
                 <div class="form-actions-modern">
@@ -1189,17 +1182,58 @@ function closeModal(modal) {
 
 function resetPrimaryCheckbox() {
     const checkbox = document.getElementById('is_primary_checkbox');
-    const label = document.getElementById('primary-checkbox-label');
-    const warning = document.getElementById('primary-warning');
     
-    if (checkbox && label && warning) {
-        checkbox.disabled = false;
+    if (checkbox) {
         checkbox.checked = false;
-        label.style.opacity = '1';
-        label.style.cursor = 'pointer';
-        warning.style.display = 'none';
+    }
+    
+    // Reset teacher dropdown to show all teachers
+    const teacherSelect = document.getElementById('teacher_id');
+    if (teacherSelect) {
+        filterTeacherOptions(false);
     }
 }
+
+// Filter teacher options based on primary checkbox state
+function filterTeacherOptions(isPrimaryChecked) {
+    const teacherSelect = document.getElementById('teacher_id');
+    if (!teacherSelect) return;
+    
+    const options = teacherSelect.querySelectorAll('option');
+    const selectedValue = teacherSelect.value;
+    
+    options.forEach(option => {
+        if (option.value === '') return; // Skip placeholder
+        
+        const isPrimaryElsewhere = option.getAttribute('data-is-primary-elsewhere') === '1';
+        
+        if (isPrimaryChecked && isPrimaryElsewhere) {
+            // Hide teachers who are already primary elsewhere
+            option.style.display = 'none';
+            option.disabled = true;
+            
+            // Clear selection if this was selected
+            if (option.value === selectedValue) {
+                teacherSelect.value = '';
+            }
+        } else {
+            // Show all teachers
+            option.style.display = '';
+            option.disabled = false;
+        }
+    });
+}
+
+// Handle primary checkbox change
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('is_primary_checkbox');
+    
+    if (checkbox) {
+        checkbox.addEventListener('change', function() {
+            filterTeacherOptions(this.checked);
+        });
+    }
+});
 
 // Handle teacher selection change
 document.addEventListener('DOMContentLoaded', function() {
@@ -1207,27 +1241,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (teacherSelect) {
         teacherSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const isPrimaryElsewhere = selectedOption.getAttribute('data-is-primary-elsewhere') === '1';
-            
-            const checkbox = document.getElementById('is_primary_checkbox');
-            const label = document.getElementById('primary-checkbox-label');
-            const warning = document.getElementById('primary-warning');
-            
-            if (isPrimaryElsewhere) {
-                // Disable primary checkbox
-                checkbox.disabled = true;
-                checkbox.checked = false;
-                label.style.opacity = '0.6';
-                label.style.cursor = 'not-allowed';
-                warning.style.display = 'block';
-            } else {
-                // Enable primary checkbox
-                checkbox.disabled = false;
-                label.style.opacity = '1';
-                label.style.cursor = 'pointer';
-                warning.style.display = 'none';
-            }
+            // No longer need to disable checkbox based on teacher selection
         });
     }
 });

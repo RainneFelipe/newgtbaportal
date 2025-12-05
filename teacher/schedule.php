@@ -120,8 +120,7 @@ ob_start();
     
     <?php if (isset($teacher_info)): ?>
         <div class="teacher-badge">
-            <?php echo htmlspecialchars($teacher_info['first_name'] . ' ' . $teacher_info['last_name']); ?> - 
-            <?php echo htmlspecialchars($teacher_info['specialization'] ?? 'Teacher'); ?>
+            <?php echo htmlspecialchars($teacher_info['first_name'] . ' ' . $teacher_info['last_name']); ?>
         </div>
     <?php endif; ?>
 </div>

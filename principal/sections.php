@@ -92,10 +92,11 @@ try {
                 case 'delete_section':
                     $section_id = $_POST['section_id'];
                     if ($section_id) {
-                        // Check if section has enrolled students
+                        // Check if section has enrolled students (fully paid and verified)
                         $check_query = "SELECT COUNT(*) as student_count 
                                        FROM students 
-                                       WHERE current_section_id = ?";
+                                       WHERE current_section_id = ? 
+                                       AND enrollment_status = 'Enrolled'";
                         $check_stmt = $db->prepare($check_query);
                         $check_stmt->execute([$section_id]);
                         $student_count = $check_stmt->fetch(PDO::FETCH_ASSOC)['student_count'];
@@ -141,7 +142,7 @@ try {
               LEFT JOIN school_years sy ON s.school_year_id = sy.id
               LEFT JOIN section_teachers st ON s.id = st.section_id AND st.is_active = 1
               LEFT JOIN teachers t ON st.teacher_id = t.user_id AND t.is_active = 1
-              LEFT JOIN students ON s.id = students.current_section_id
+              LEFT JOIN students ON s.id = students.current_section_id AND students.is_active = 1
               WHERE 1=1";
     
     $params = [];
@@ -267,7 +268,7 @@ ob_start();
         </div>
         <div class="stat-content">
             <div class="stat-number"><?php echo array_sum(array_column($sections, 'enrolled_count')); ?></div>
-            <div class="stat-label">Total Enrolled</div>
+            <div class="stat-label">Total Registered</div>
         </div>
     </div>
     
@@ -488,7 +489,7 @@ ob_start();
                         
                         <div class="enrollment-progress">
                             <div class="enrollment-header">
-                                <span class="enrollment-label">Current Enrollment</span>
+                                <span class="enrollment-label">Number of Students in Section</span>
                                 <span class="enrollment-count"><?php echo $section['enrolled_count']; ?> students</span>
                             </div>
                             <div class="enrollment-note">
@@ -543,7 +544,7 @@ ob_start();
                         <th>School Year</th>
                         <th>Teachers</th>
                         <th>Room</th>
-                        <th>Enrollment</th>
+                        <th>Number of Students</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>

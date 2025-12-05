@@ -26,6 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 case 'add_subject':
                     $subject_code = trim($_POST['subject_code']);
                     $subject_name = trim($_POST['subject_name']);
+                    $grade_level_id = $_POST['grade_level_id'];
                     $description = trim($_POST['description']);
                     
                     // Check if subject code already exists
@@ -37,9 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $message = "Subject code already exists!";
                         $messageType = 'error';
                     } else {
-                        $query = "INSERT INTO subjects (subject_code, subject_name, description) VALUES (?, ?, ?)";
+                        $query = "INSERT INTO subjects (subject_code, subject_name, grade_level_id, description) VALUES (?, ?, ?, ?)";
                         $stmt = $db->prepare($query);
-                        $stmt->execute([$subject_code, $subject_name, $description]);
+                        $stmt->execute([$subject_code, $subject_name, $grade_level_id, $description]);
                         $message = "Subject added successfully!";
                         $messageType = 'success';
                     }
@@ -49,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $subject_id = $_POST['subject_id'];
                     $subject_code = trim($_POST['subject_code']);
                     $subject_name = trim($_POST['subject_name']);
+                    $grade_level_id = $_POST['grade_level_id'];
                     $description = trim($_POST['description']);
                     $is_active = isset($_POST['is_active']) ? 1 : 0;
                     
@@ -61,9 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $message = "Subject code already exists!";
                         $messageType = 'error';
                     } else {
-                        $query = "UPDATE subjects SET subject_code = ?, subject_name = ?, description = ?, is_active = ? WHERE id = ?";
+                        $query = "UPDATE subjects SET subject_code = ?, subject_name = ?, grade_level_id = ?, description = ?, is_active = ? WHERE id = ?";
                         $stmt = $db->prepare($query);
-                        $stmt->execute([$subject_code, $subject_name, $description, $is_active, $subject_id]);
+                        $stmt->execute([$subject_code, $subject_name, $grade_level_id, $description, $is_active, $subject_id]);
                         $message = "Subject updated successfully!";
                         $messageType = 'success';
                     }
@@ -276,13 +278,21 @@ $total_subjects = $subjects_count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
 $subjects_total_pages = ceil($total_subjects / $subjects_per_page);
 
 // Get subjects with pagination
-$subjects_query = "SELECT * FROM subjects ORDER BY is_active DESC, subject_code ASC LIMIT $subjects_per_page OFFSET $subjects_offset";
+$subjects_query = "SELECT s.*, gl.grade_name 
+                   FROM subjects s 
+                   LEFT JOIN grade_levels gl ON s.grade_level_id = gl.id 
+                   ORDER BY gl.grade_order ASC, s.subject_code ASC 
+                   LIMIT $subjects_per_page OFFSET $subjects_offset";
 $subjects_stmt = $db->prepare($subjects_query);
 $subjects_stmt->execute();
 $subjects = $subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Get all subjects for dropdowns (not paginated)
-$all_subjects_query = "SELECT * FROM subjects WHERE is_active = 1 ORDER BY subject_code ASC";
+$all_subjects_query = "SELECT s.*, gl.grade_name 
+                       FROM subjects s 
+                       LEFT JOIN grade_levels gl ON s.grade_level_id = gl.id 
+                       WHERE s.is_active = 1 
+                       ORDER BY gl.grade_order ASC, s.subject_code ASC";
 $all_subjects_stmt = $db->prepare($all_subjects_query);
 $all_subjects_stmt->execute();
 $all_subjects = $all_subjects_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -418,6 +428,7 @@ ob_start();
                 <tr style="background: var(--light-blue); border-bottom: 2px solid var(--primary-blue);">
                     <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Subject Code</th>
                     <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Subject Name</th>
+                    <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Grade Level</th>
                     <th style="padding: 1rem; text-align: left; color: var(--black); font-weight: 600;">Description</th>
                     <th style="padding: 1rem; text-align: center; color: var(--black); font-weight: 600;">Status</th>
                     <th style="padding: 1rem; text-align: center; color: var(--black); font-weight: 600;">Actions</th>
@@ -428,6 +439,15 @@ ob_start();
                 <tr style="border-bottom: 1px solid var(--light-gray);">
                     <td style="padding: 1rem; color: var(--black); font-weight: 600;"><?php echo htmlspecialchars($subject['subject_code']); ?></td>
                     <td style="padding: 1rem; color: var(--black);"><?php echo htmlspecialchars($subject['subject_name']); ?></td>
+                    <td style="padding: 1rem; color: var(--black);">
+                        <?php if ($subject['grade_name']): ?>
+                            <span style="background: var(--light-blue); color: var(--primary-blue); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.875rem; font-weight: 600;">
+                                <?php echo htmlspecialchars($subject['grade_name']); ?>
+                            </span>
+                        <?php else: ?>
+                            <span style="color: var(--gray); font-style: italic;">Not set</span>
+                        <?php endif; ?>
+                    </td>
                     <td style="padding: 1rem; color: var(--gray); max-width: 200px; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($subject['description'] ?: 'No description'); ?></td>
                     <td style="padding: 1rem; text-align: center;">
                         <span style="padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem; font-weight: 600; 
@@ -616,7 +636,7 @@ ob_start();
             <select name="grade_level_id" id="assign_grade_level_id" required onchange="filterSubjectsByGrade()" style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
                 <option value="">Select Grade Level</option>
                 <?php foreach ($grade_levels as $grade): ?>
-                <option value="<?php echo $grade['id']; ?>" data-grade-name="<?php echo htmlspecialchars($grade['grade_name']); ?>">
+                <option value="<?php echo $grade['id']; ?>">
                     <?php echo htmlspecialchars($grade['grade_name']); ?>
                 </option>
                 <?php endforeach; ?>
@@ -628,7 +648,7 @@ ob_start();
             <select name="subject_id" id="assign_subject_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
                 <option value="">Select Grade Level First</option>
                 <?php foreach ($all_subjects as $subject): ?>
-                <option value="<?php echo $subject['id']; ?>" data-subject-code="<?php echo htmlspecialchars($subject['subject_code']); ?>" style="display: none;">
+                <option value="<?php echo $subject['id']; ?>" data-grade-level-id="<?php echo $subject['grade_level_id']; ?>" style="display: none;">
                     <?php echo htmlspecialchars($subject['subject_code'] . ' - ' . $subject['subject_name']); ?>
                 </option>
                 <?php endforeach; ?>
@@ -729,6 +749,16 @@ ob_start();
             </div>
             
             <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Grade Level:</label>
+                <select name="grade_level_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+                    <option value="">Select Grade Level</option>
+                    <?php foreach ($grade_levels as $grade): ?>
+                    <option value="<?php echo $grade['id']; ?>"><?php echo htmlspecialchars($grade['grade_name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Description:</label>
                 <textarea name="description" rows="3" 
                           style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
@@ -766,6 +796,16 @@ ob_start();
                 <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Subject Name:</label>
                 <input type="text" name="subject_name" id="edit_subject_name" required 
                        style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--black); font-weight: 600;">Grade Level:</label>
+                <select name="grade_level_id" id="edit_grade_level_id" required style="width: 100%; padding: 0.75rem; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 1rem;">
+                    <option value="">Select Grade Level</option>
+                    <?php foreach ($grade_levels as $grade): ?>
+                    <option value="<?php echo $grade['id']; ?>"><?php echo htmlspecialchars($grade['grade_name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             
             <div style="margin-bottom: 1.5rem;">
@@ -934,45 +974,30 @@ function filterSubjectsByGrade() {
     
     if (!gradeSelect || !subjectSelect) return;
     
-    const selectedGradeOption = gradeSelect.options[gradeSelect.selectedIndex];
-    const selectedGradeName = selectedGradeOption ? selectedGradeOption.getAttribute('data-grade-name') : '';
+    const selectedGradeId = gradeSelect.value;
     
     // Reset subject select
     subjectSelect.value = '';
     
-    if (!selectedGradeName) {
+    if (!selectedGradeId) {
         // No grade selected, hide all subjects
-        subjectSelect.innerHTML = '<option value="">Select Grade Level First</option>';
         Array.from(subjectSelect.options).forEach(option => {
             if (option.value) {
                 option.style.display = 'none';
             }
         });
+        subjectSelect.options[0].textContent = 'Select Grade Level First';
         return;
     }
     
-    // Extract grade identifier from grade name (e.g., "Grade 3" -> "G3", "Grade 10" -> "G10", "Nursery" -> "NURS")
-    let gradePrefix = '';
-    if (selectedGradeName.toLowerCase().includes('nursery')) {
-        gradePrefix = 'NURS';
-    } else if (selectedGradeName.toLowerCase().includes('kindergarten')) {
-        gradePrefix = 'K';
-    } else {
-        // Extract number from "Grade X" format
-        const gradeMatch = selectedGradeName.match(/Grade\s+(\d+)/i);
-        if (gradeMatch) {
-            gradePrefix = 'G' + gradeMatch[1];
-        }
-    }
-    
-    // Show/hide subjects based on grade prefix in subject code
+    // Show/hide subjects based on grade_level_id match
     let hasVisibleOptions = false;
     Array.from(subjectSelect.options).forEach(option => {
         if (option.value) {
-            const subjectCode = option.getAttribute('data-subject-code') || '';
+            const optionGradeLevelId = option.getAttribute('data-grade-level-id');
             
-            // Check if subject code starts with the grade prefix
-            if (subjectCode.toUpperCase().startsWith(gradePrefix + '-')) {
+            // Check if subject's grade_level_id matches selected grade
+            if (optionGradeLevelId === selectedGradeId) {
                 option.style.display = 'block';
                 hasVisibleOptions = true;
             } else {
@@ -986,6 +1011,7 @@ function filterSubjectsByGrade() {
     if (hasVisibleOptions) {
         firstOption.textContent = 'Select Subject';
     } else {
+        const selectedGradeName = gradeSelect.options[gradeSelect.selectedIndex].text;
         firstOption.textContent = 'No subjects available for ' + selectedGradeName;
     }
 }
@@ -1002,6 +1028,7 @@ function editSubject(subject) {
     document.getElementById('edit_subject_id').value = subject.id;
     document.getElementById('edit_subject_code').value = subject.subject_code;
     document.getElementById('edit_subject_name').value = subject.subject_name;
+    document.getElementById('edit_grade_level_id').value = subject.grade_level_id || '';
     document.getElementById('edit_subject_description').value = subject.description || '';
     document.getElementById('edit_is_active').checked = subject.is_active == 1;
     document.getElementById('editSubjectModal').style.display = 'block';

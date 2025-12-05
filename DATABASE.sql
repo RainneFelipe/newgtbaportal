@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Nov 24, 2025 at 08:12 AM
+-- Generation Time: Dec 05, 2025 at 12:55 PM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -156,7 +156,11 @@ INSERT INTO `audit_logs` (`id`, `user_id`, `action`, `details`, `table_name`, `r
 (190, 3, 'Student Status Change', 'Changed enrollment status to: Suspended', 'students', 366, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-11-24 07:43:43'),
 (191, 3, 'Student Status Change', 'Changed enrollment status to: Dropped', 'students', 463, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-11-24 07:43:48'),
 (192, 3, 'Student Status Change', 'Changed enrollment status to: Transferred', 'students', 464, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-11-24 07:43:52'),
-(193, 3, 'Student Status Change', 'Changed enrollment status to: Graduated', 'students', 465, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-11-24 07:44:00');
+(193, 3, 'Student Status Change', 'Changed enrollment status to: Graduated', 'students', 465, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-11-24 07:44:00'),
+(194, 3, 'Student Status Change', 'Changed enrollment status to: Enrolled', 'students', 472, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-12-05 11:46:15'),
+(195, 3, 'prevent_auto_promotion', '{\"prevented_count\":1,\"students\":[\"Alix Felipe\"]}', 'students', NULL, NULL, NULL, '127.0.0.1', NULL, '2025-12-05 11:54:37'),
+(196, 3, 'Student Status Change', 'Changed enrollment status to: Enrolled', 'students', 472, NULL, NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0', '2025-12-05 12:05:33'),
+(197, 3, 'prevent_auto_promotion', '{\"prevented_count\":1,\"students\":[\"Alix Felipe\"]}', 'students', NULL, NULL, NULL, '127.0.0.1', NULL, '2025-12-05 12:06:08');
 
 -- --------------------------------------------------------
 
@@ -1233,6 +1237,7 @@ CREATE TABLE `students` (
   `lrn` varchar(12) DEFAULT NULL,
   `student_type` enum('Continuing','Transfer','New') NOT NULL,
   `enrollment_status` enum('Pending Payment','Enrolled','Dropped','Suspended','Transferred','Graduated') DEFAULT 'Pending Payment',
+  `prevent_auto_promotion` tinyint(1) DEFAULT NULL,
   `first_name` varchar(100) NOT NULL,
   `last_name` varchar(100) NOT NULL,
   `middle_name` varchar(100) DEFAULT NULL,
@@ -1265,128 +1270,128 @@ CREATE TABLE `students` (
 -- Dumping data for table `students`
 --
 
-INSERT INTO `students` (`id`, `user_id`, `student_id`, `lrn`, `student_type`, `enrollment_status`, `first_name`, `last_name`, `middle_name`, `suffix`, `gender`, `date_of_birth`, `place_of_birth`, `religion`, `present_address`, `permanent_address`, `father_id`, `mother_id`, `legal_guardian_id`, `emergency_contact_name`, `emergency_contact_number`, `emergency_contact_relationship`, `current_grade_level_id`, `current_section_id`, `current_school_year_id`, `medical_conditions`, `allergies`, `special_needs`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
-(241, 310, '2025001', '202500000001', 'New', 'Pending Payment', 'Angelo', 'Cruz', 'Santos', NULL, 'Male', '2021-03-15', 'Manila', 'Catholic', '123 Main Street, Manila', '123 Main Street, Manila', 226, 238, 538, 'Juan Cruz', '09171234567', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(242, 311, '2025002', '202500000002', 'New', 'Pending Payment', 'Sofia', 'Reyes', 'Garcia', NULL, 'Female', '2021-07-22', 'Quezon City', 'Catholic', '456 Oak Avenue, Quezon City', '456 Oak Avenue, Quezon City', 227, 239, 539, 'Jose Reyes', '09182345678', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(243, 312, '2025003', '202500000003', 'New', 'Pending Payment', 'Gabriel', 'Santos', 'Lopez', NULL, 'Male', '2021-11-08', 'Pasig City', 'Catholic', '789 Pine Street, Pasig City', '789 Pine Street, Pasig City', 228, 240, 540, 'Antonio Santos', '09193456789', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(244, 313, '2025004', '202500000004', 'New', 'Pending Payment', 'Isabella', 'Gonzales', 'Martinez', NULL, 'Female', '2021-05-30', 'Makati City', 'Catholic', '321 Elm Road, Makati City', '321 Elm Road, Makati City', 229, 241, 541, 'Pedro Gonzales', '09204567890', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(245, 314, '2025005', '202500000005', 'New', 'Pending Payment', 'Miguel', 'Hernandez', 'Rivera', NULL, 'Male', '2021-09-12', 'Taguig City', 'Catholic', '654 Birch Lane, Taguig City', '654 Birch Lane, Taguig City', 230, 242, 542, 'Miguel Hernandez', '09215678901', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(246, 315, '2025006', '202500000006', 'New', 'Pending Payment', 'Sophia', 'Lopez', 'Torres', NULL, 'Female', '2021-01-25', 'Paranaque City', 'Catholic', '987 Cedar Drive, Paranaque City', '987 Cedar Drive, Paranaque City', 231, 243, 543, 'Carlos Lopez', '09226789012', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(247, 316, '2025007', '202500000007', 'New', 'Pending Payment', 'Lorenzo', 'Martinez', 'Flores', NULL, 'Male', '2021-04-18', 'Las Pinas City', 'Catholic', '147 Maple Court, Las Pinas City', '147 Maple Court, Las Pinas City', 232, 244, 544, 'Roberto Martinez', '09237890123', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(248, 317, '2025008', '202500000008', 'New', 'Pending Payment', 'Camila', 'Torres', 'Ramos', NULL, 'Female', '2021-12-03', 'Muntinlupa City', 'Catholic', '258 Walnut Street, Muntinlupa City', '258 Walnut Street, Muntinlupa City', 233, 245, 545, 'Fernando Torres', '09248901234', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(249, 318, '2025009', '202500000009', 'New', 'Pending Payment', 'Sebastian', 'Flores', 'Morales', NULL, 'Male', '2021-08-27', 'Marikina City', 'Catholic', '369 Aspen Avenue, Marikina City', '369 Aspen Avenue, Marikina City', 234, 246, 546, 'Manuel Flores', '09259012345', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(250, 319, '2025010', '202500000010', 'New', 'Pending Payment', 'Valentina', 'Ramos', 'Castro', NULL, 'Female', '2021-06-14', 'Pasay City', 'Catholic', '741 Spruce Road, Pasay City', '741 Spruce Road, Pasay City', 235, 247, 547, 'Ricardo Ramos', '09260123456', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
-(361, 421, '2025011', '202500000011', 'New', 'Pending Payment', 'Mateo', 'Morales', 'Mendoza', NULL, 'Male', '2020-03-10', 'Caloocan City', 'Catholic', '852 Hickory Lane, Caloocan City', '852 Hickory Lane, Caloocan City', 236, 248, 548, 'Eduardo Morales', '09271234567', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(362, 422, '2025012', '202500000012', 'New', 'Pending Payment', 'Emma', 'Castro', 'Jimenez', NULL, 'Female', '2020-07-15', 'Malabon City', 'Catholic', '963 Poplar Street, Malabon City', '963 Poplar Street, Malabon City', 237, 249, 549, 'Alejandro Castro', '09282345678', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(363, 423, '2025013', '202500000013', 'New', 'Pending Payment', 'Diego', 'Cruz', 'Santos', NULL, 'Male', '2020-11-20', 'Navotas City', 'Catholic', '159 Willow Road, Navotas City', '159 Willow Road, Navotas City', 322, 358, 550, 'Daniel Dela Rosa', '09301234567', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(364, 424, '2025014', '202500000014', 'New', 'Pending Payment', 'Mia', 'Reyes', 'Garcia', NULL, 'Female', '2020-05-25', 'Valenzuela City', 'Catholic', '753 Chestnut Ave, Valenzuela City', '753 Chestnut Ave, Valenzuela City', 323, 359, 551, 'Gabriel Bautista', '09312345678', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(365, 425, '2025015', '202500000015', 'New', 'Pending Payment', 'Lucas', 'Santos', 'Lopez', NULL, 'Male', '2020-09-30', 'San Juan City', 'Catholic', '486 Sycamore Dr, San Juan City', '486 Sycamore Dr, San Juan City', 324, 360, 552, 'Rafael Navarro', '09323456789', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(366, 426, '2025016', '202500000016', 'New', 'Suspended', 'Zoe', 'Gonzales', 'Martinez', NULL, 'Female', '2020-01-12', 'Mandaluyong City', 'Catholic', '357 Magnolia St, Mandaluyong City', '357 Magnolia St, Mandaluyong City', 325, 361, 553, 'Samuel Valdez', '09334567890', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:43:43'),
-(367, 427, '2025017', '202500000017', 'New', 'Pending Payment', 'Ethan', 'Hernandez', 'Rivera', NULL, 'Male', '2020-04-08', 'Pateros', 'Catholic', '624 Dogwood Lane, Pateros', '624 Dogwood Lane, Pateros', 326, 362, 554, 'Benjamin Aguilar', '09345678901', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(368, 428, '2025018', '202500000018', 'New', 'Pending Payment', 'Aria', 'Lopez', 'Torres', NULL, 'Female', '2020-12-18', 'Marikina City', 'Catholic', '791 Redwood Road, Marikina City', '791 Redwood Road, Marikina City', 327, 363, 555, 'Nicolas Velasco', '09356789012', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(369, 429, '2025019', '202500000019', 'New', 'Pending Payment', 'Noah', 'Martinez', 'Flores', NULL, 'Male', '2020-08-22', 'Antipolo City', 'Catholic', '135 Sequoia Circle, Antipolo City', '135 Sequoia Circle, Antipolo City', 328, 364, 556, 'Adrian Castillo', '09367890123', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(370, 430, '2025020', '202500000020', 'New', 'Pending Payment', 'Luna', 'Torres', 'Ramos', NULL, 'Female', '2020-06-05', 'Cainta, Rizal', 'Catholic', '802 Bamboo Street, Cainta, Rizal', '802 Bamboo Street, Cainta, Rizal', 329, 365, 557, 'Victor Medina', '09378901234', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(371, 431, '2025021', '202500000021', 'New', 'Pending Payment', 'Alexander', 'Dela Rosa', 'Villanueva', NULL, 'Male', '2019-02-15', 'Manila', 'Catholic', '123 Narra Street, Manila', '123 Narra Street, Manila', 330, 366, 558, 'Francisco Campos', '09390123456', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(372, 432, '2025022', '202500000022', 'New', 'Pending Payment', 'Victoria', 'Bautista', 'Salazar', NULL, 'Female', '2019-06-20', 'Quezon City', 'Catholic', '456 Molave Avenue, Quezon City', '456 Molave Avenue, Quezon City', 331, 367, 559, 'Diego Ortega', '09401234567', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(373, 433, '2025023', '202500000023', 'New', 'Pending Payment', 'Leonardo', 'Navarro', 'Cordero', NULL, 'Male', '2019-10-25', 'Pasig City', 'Catholic', '789 Mahogany Road, Pasig City', '789 Mahogany Road, Pasig City', 332, 368, 560, 'Jorge Lozano', '09412345678', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(374, 434, '2025024', '202500000024', 'New', 'Pending Payment', 'Angelica', 'Valdez', 'Gutierrez', NULL, 'Female', '2019-04-30', 'Makati City', 'Catholic', '321 Banyan Street, Makati City', '321 Banyan Street, Makati City', 333, 369, 561, 'Raul Espinoza', '09423456789', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(375, 435, '2025025', '202500000025', 'New', 'Pending Payment', 'Nicolas', 'Aguilar', 'Herrera', NULL, 'Male', '2019-08-14', 'Taguig City', 'Catholic', '654 Ipil Lane, Taguig City', '654 Ipil Lane, Taguig City', 334, 370, 562, 'Sergio Molina', '09434567890', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(376, 436, '2025026', '202500000026', 'New', 'Pending Payment', 'Catalina', 'Velasco', 'Romero', NULL, 'Female', '2019-12-18', 'Paranaque City', 'Catholic', '987 Acacia Drive, Paranaque City', '987 Acacia Drive, Paranaque City', 335, 371, 563, 'Arturo Pacheco', '09445678901', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(377, 437, '2025027', '202500000027', 'New', 'Pending Payment', 'Maximiliano', 'Castillo', 'Vargas', NULL, 'Male', '2019-03-22', 'Las Pinas City', 'Catholic', '147 Bamboo Court, Las Pinas City', '147 Bamboo Court, Las Pinas City', 336, 372, 564, 'Ignacio Figueroa', '09456789012', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(378, 438, '2025028', '202500000028', 'New', 'Pending Payment', 'Francesca', 'Medina', 'Peña', NULL, 'Female', '2019-07-26', 'Muntinlupa City', 'Catholic', '258 Talisay Street, Muntinlupa City', '258 Talisay Street, Muntinlupa City', 337, 373, 565, 'Emilio Contreras', '09467890123', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(379, 439, '2025029', '202500000029', 'New', 'Pending Payment', 'Santiago', 'Guerrero', 'Dominguez', NULL, 'Male', '2019-11-30', 'Marikina City', 'Catholic', '369 Bougainvillea Avenue, Marikina City', '369 Bougainvillea Avenue, Marikina City', 338, 374, 566, 'Rodrigo Maldonado', '09478901234', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(380, 440, '2025030', '202500000030', 'New', 'Pending Payment', 'Esperanza', 'Campos', 'Silva', NULL, 'Female', '2019-05-14', 'Pasay City', 'Catholic', '741 Sampaguita Road, Pasay City', '741 Sampaguita Road, Pasay City', 339, 375, 567, 'Armando Acosta', '09489012345', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(381, 441, '2025031', '1123', 'New', 'Pending Payment', 'Emmanuel', 'Ortega', 'Ponce', NULL, 'Male', '2018-01-20', 'Manila', 'Catholic', '456 Rose Street, Manila', '456 Rose Street, Manila', 340, 376, 568, 'Diego Ortega', '09401234567', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(382, 442, '2025032', '202500000032', 'New', 'Pending Payment', 'Gabriella', 'Lozano', 'Cervantes', NULL, 'Female', '2018-05-25', 'Quezon City', 'Catholic', '789 Lily Avenue, Quezon City', '789 Lily Avenue, Quezon City', 341, 377, 569, 'Jorge Lozano', '09412345678', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(383, 443, '2025033', '202500000033', 'New', 'Pending Payment', 'Rafael', 'Espinoza', 'Delgado', NULL, 'Male', '2018-09-30', 'Pasig City', 'Catholic', '321 Tulip Road, Pasig City', '321 Tulip Road, Pasig City', 342, 378, 570, 'Raul Espinoza', '09423456789', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(384, 444, '2025034', '202500000034', 'New', 'Pending Payment', 'Valeria', 'Molina', 'Fuentes', NULL, 'Female', '2018-03-14', 'Makati City', 'Catholic', '654 Sunflower Lane, Makati City', '654 Sunflower Lane, Makati City', 343, 379, 571, 'Sergio Molina', '09434567890', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(385, 445, '2025035', '202500000035', 'New', 'Pending Payment', 'Rodrigo', 'Pacheco', 'Sandoval', NULL, 'Male', '2018-07-18', 'Taguig City', 'Catholic', '987 Orchid Drive, Taguig City', '987 Orchid Drive, Taguig City', 344, 380, 572, 'Arturo Pacheco', '09445678901', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(386, 446, '2025036', '202500000036', 'New', 'Pending Payment', 'Ximena', 'Figueroa', 'Escobar', NULL, 'Female', '2018-11-22', 'Paranaque City', 'Catholic', '147 Jasmine Court, Paranaque City', '147 Jasmine Court, Paranaque City', 345, 381, 573, 'Ignacio Figueroa', '09456789012', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(387, 447, '2025037', '202500000037', 'New', 'Pending Payment', 'Thiago', 'Contreras', 'Galvan', NULL, 'Male', '2018-04-26', 'Las Pinas City', 'Catholic', '258 Dahlia Street, Las Pinas City', '258 Dahlia Street, Las Pinas City', 346, 382, 574, 'Emilio Contreras', '09467890123', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(388, 448, '2025038', '202500000038', 'New', 'Pending Payment', 'Amelia', 'Maldonado', 'Barrera', NULL, 'Female', '2018-08-30', 'Muntinlupa City', 'Catholic', '369 Hibiscus Avenue, Muntinlupa City', '369 Hibiscus Avenue, Muntinlupa City', 347, 383, 575, 'Rodrigo Maldonado', '09478901234', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(389, 449, '2025039', '202500000039', 'New', 'Pending Payment', 'Fernando', 'Acosta', 'Cabrera', NULL, 'Male', '2018-12-14', 'Marikina City', 'Catholic', '741 Carnation Road, Marikina City', '741 Carnation Road, Marikina City', 348, 384, 576, 'Armando Acosta', '09489012345', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(390, 450, '2025040', '202500000040', 'New', 'Pending Payment', 'Dulce', 'Vega', 'Cortez', NULL, 'Female', '2018-06-18', 'Pasay City', 'Catholic', '852 Petunia Lane, Pasay City', '852 Petunia Lane, Pasay City', 349, 385, 577, 'Esteban Vega', '09490123456', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(391, 451, '2025041', '202500000041', 'New', 'Pending Payment', 'Joaquin', 'Rojas', 'Moreno', NULL, 'Male', '2017-02-10', 'Manila', 'Catholic', '123 Violet Street, Manila', '123 Violet Street, Manila', 350, 386, 578, 'Cesar Rojas', '09501234567', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(392, 452, '2025042', '202500000042', 'New', 'Pending Payment', 'Renata', 'Perez', 'Soto', NULL, 'Female', '2017-06-15', 'Quezon City', 'Catholic', '456 Marigold Avenue, Quezon City', '456 Marigold Avenue, Quezon City', 351, 387, 579, 'Ruben Perez', '09512345678', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(393, 453, '2025043', '202500000043', 'New', 'Pending Payment', 'Adriano', 'Carrasco', 'Restrepo', NULL, 'Male', '2017-10-20', 'Pasig City', 'Catholic', '789 Chrysanthemum Road, Pasig City', '789 Chrysanthemum Road, Pasig City', 352, 388, 580, 'Andres Carrasco', '09523456789', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(394, 454, '2025044', '202500000044', 'New', 'Pending Payment', 'Esperanza', 'Zuniga', 'Osorio', NULL, 'Female', '2017-04-25', 'Makati City', 'Catholic', '321 Lavender Lane, Makati City', '321 Lavender Lane, Makati City', 353, 389, 581, 'Mauricio Zuniga', '09534567890', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(395, 455, '2025045', '202500000045', 'New', 'Pending Payment', 'Maximos', 'Varela', 'Calderon', NULL, 'Male', '2017-08-30', 'Taguig City', 'Catholic', '654 Daffodil Drive, Taguig City', '654 Daffodil Drive, Taguig City', 354, 390, 582, 'Hector Varela', '09545678901', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(396, 456, '2025046', '202500000046', 'New', 'Pending Payment', 'Soledad', 'Hidalgo', 'Espejo', NULL, 'Female', '2017-12-14', 'Paranaque City', 'Catholic', '987 Freesia Court, Paranaque City', '987 Freesia Court, Paranaque City', 355, 391, 583, 'Oscar Hidalgo', '09556789012', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(397, 457, '2025047', '202500000047', 'New', 'Pending Payment', 'Patricio', 'Pantoja', 'Uribe', NULL, 'Male', '2017-03-18', 'Las Pinas City', 'Catholic', '147 Poppy Street, Las Pinas City', '147 Poppy Street, Las Pinas City', 356, 392, 584, 'Marco Pantoja', '09567890123', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(398, 458, '2025048', '202500000048', 'New', 'Pending Payment', 'Milagros', 'Quintero', 'Benitez', NULL, 'Female', '2017-07-22', 'Muntinlupa City', 'Catholic', '258 Zinnia Avenue, Muntinlupa City', '258 Zinnia Avenue, Muntinlupa City', 357, 393, 585, 'Luis Quintero', '09578901234', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(399, 459, '2025049', '202500000049', 'New', 'Pending Payment', 'Cristobal', 'Camacho', 'Palacios', NULL, 'Male', '2017-11-26', 'Marikina City', 'Catholic', '369 Iris Road, Marikina City', '369 Iris Road, Marikina City', 394, 466, 586, 'Pablo Camacho', '09589012345', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(400, 460, '2025050', '202500000050', 'New', 'Pending Payment', 'Remedios', 'Cardenas', 'Montoya', NULL, 'Female', '2017-05-30', 'Pasay City', 'Catholic', '741 Begonia Lane, Pasay City', '741 Begonia Lane, Pasay City', 395, 467, 587, 'Enrique Cardenas', '09590123456', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(401, 461, '2025051', '202500000051', 'New', 'Pending Payment', 'Agustin', 'Solis', 'Villalobos', NULL, 'Male', '2016-01-15', 'Manila', 'Catholic', '852 Camellia Street, Manila', '852 Camellia Street, Manila', 396, 468, 588, 'Javier Solis', '09601234567', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(402, 462, '2025052', '202500000052', 'New', 'Pending Payment', 'Concepcion', 'Ibarra', 'Aranda', NULL, 'Female', '2016-05-20', 'Quezon City', 'Catholic', '963 Azalea Avenue, Quezon City', '963 Azalea Avenue, Quezon City', 397, 469, 589, 'Mario Ibarra', '09612345678', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(403, 463, '2025053', '202500000053', 'New', 'Pending Payment', 'Teodoro', 'Meza', 'Coronado', NULL, 'Male', '2016-09-25', 'Pasig City', 'Catholic', '159 Geranium Road, Pasig City', '159 Geranium Road, Pasig City', 398, 470, 590, 'Felipe Meza', '09623456789', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(404, 464, '2025054', '202500000054', 'New', 'Pending Payment', 'Pilar', 'Cano', 'Avalos', NULL, 'Female', '2016-03-30', 'Makati City', 'Catholic', '753 Snapdragon Lane, Makati City', '753 Snapdragon Lane, Makati City', 399, 471, 591, 'Alvaro Cano', '09634567890', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(405, 465, '2025055', '202500000055', 'New', 'Pending Payment', 'Leopoldo', 'Ochoa', 'Bermudez', NULL, 'Male', '2016-07-14', 'Taguig City', 'Catholic', '486 Peony Drive, Taguig City', '486 Peony Drive, Taguig City', 400, 472, 592, 'Guillermo Ochoa', '09645678901', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(406, 466, '2025056', '202500000056', 'New', 'Pending Payment', 'Clementina', 'Paredes', 'Casillas', NULL, 'Female', '2016-11-18', 'Paranaque City', 'Catholic', '357 Pansy Court, Paranaque City', '357 Pansy Court, Paranaque City', 401, 473, 593, 'Jaime Paredes', '09656789012', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(407, 467, '2025057', '202500000057', 'New', 'Pending Payment', 'Evaristo', 'Cruz', 'Santos', NULL, 'Male', '2016-04-22', 'Las Pinas City', 'Catholic', '624 Cosmos Street, Las Pinas City', '624 Cosmos Street, Las Pinas City', 402, 474, 594, 'Juan Cruz', '09171234567', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(408, 468, '2025058', '202500000058', 'New', 'Pending Payment', 'Rosario', 'Reyes', 'Garcia', NULL, 'Female', '2016-08-26', 'Muntinlupa City', 'Catholic', '791 Gladiolus Avenue, Muntinlupa City', '791 Gladiolus Avenue, Muntinlupa City', 403, 475, 595, 'Jose Reyes', '09182345678', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(409, 469, '2025059', '202500000059', 'New', 'Pending Payment', 'Florencio', 'Santos', 'Lopez', NULL, 'Male', '2016-12-30', 'Marikina City', 'Catholic', '135 Aster Road, Marikina City', '135 Aster Road, Marikina City', 404, 476, 596, 'Antonio Santos', '09193456789', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(410, 470, '2025060', '202500000060', 'New', 'Pending Payment', 'Amparo', 'Gonzales', 'Martinez', NULL, 'Female', '2016-06-14', 'Pasay City', 'Catholic', '802 Carnation Lane, Pasay City', '802 Carnation Lane, Pasay City', 405, 477, 597, 'Pedro Gonzales', '09204567890', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(411, 471, '2025061', '202500000061', 'New', 'Pending Payment', 'Anastacio', 'Hernandez', 'Rivera', NULL, 'Male', '2015-02-20', 'Manila', 'Catholic', '147 Lotus Street, Manila', '147 Lotus Street, Manila', 406, 478, 598, 'Miguel Hernandez', '09215678901', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(412, 472, '2025062', '202500000062', 'New', 'Pending Payment', 'Trinidad', 'Lopez', 'Torres', NULL, 'Female', '2015-06-25', 'Quezon City', 'Catholic', '258 Tulip Avenue, Quezon City', '258 Tulip Avenue, Quezon City', 407, 479, 599, 'Carlos Lopez', '09226789012', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(413, 473, '2025063', '202500000063', 'New', 'Pending Payment', 'Ireneo', 'Martinez', 'Flores', NULL, 'Male', '2015-10-30', 'Pasig City', 'Catholic', '369 Jasmine Road, Pasig City', '369 Jasmine Road, Pasig City', 408, 480, 600, 'Roberto Martinez', '09237890123', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(414, 474, '2025064', '202500000064', 'New', 'Pending Payment', 'Asuncion', 'Torres', 'Ramos', NULL, 'Female', '2015-04-14', 'Makati City', 'Catholic', '741 Magnolia Lane, Makati City', '741 Magnolia Lane, Makati City', 409, 481, 601, 'Fernando Torres', '09248901234', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(415, 475, '2025065', '202500000065', 'New', 'Pending Payment', 'Crisanto', 'Flores', 'Morales', NULL, 'Male', '2015-08-18', 'Taguig City', 'Catholic', '852 Gardenia Drive, Taguig City', '852 Gardenia Drive, Taguig City', 410, 482, 602, 'Manuel Flores', '09259012345', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(416, 476, '2025066', '202500000066', 'New', 'Pending Payment', 'Encarnacion', 'Ramos', 'Castro', NULL, 'Female', '2015-12-22', 'Paranaque City', 'Catholic', '963 Sunflower Court, Paranaque City', '963 Sunflower Court, Paranaque City', 411, 483, 603, 'Ricardo Ramos', '09260123456', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(417, 477, '2025067', '202500000067', 'New', 'Pending Payment', 'Placido', 'Morales', 'Mendoza', NULL, 'Male', '2015-03-26', 'Las Pinas City', 'Catholic', '159 Lily Street, Las Pinas City', '159 Lily Street, Las Pinas City', 412, 484, 604, 'Eduardo Morales', '09271234567', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(418, 478, '2025068', '202500000068', 'New', 'Pending Payment', 'Natividad', 'Castro', 'Jimenez', NULL, 'Female', '2015-07-30', 'Muntinlupa City', 'Catholic', '753 Rose Avenue, Muntinlupa City', '753 Rose Avenue, Muntinlupa City', 413, 485, 605, 'Alejandro Castro', '09282345678', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(419, 479, '2025069', '202500000069', 'New', 'Pending Payment', 'Basilio', 'Dela Rosa', 'Villanueva', NULL, 'Male', '2015-11-14', 'Marikina City', 'Catholic', '486 Daisy Road, Marikina City', '486 Daisy Road, Marikina City', 414, 486, 606, 'Daniel Dela Rosa', '09301234567', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(420, 480, '2025070', '202500000070', 'New', 'Pending Payment', 'Purificacion', 'Bautista', 'Salazar', NULL, 'Female', '2015-05-18', 'Pasay City', 'Catholic', '357 Orchid Lane, Pasay City', '357 Orchid Lane, Pasay City', 415, 487, 607, 'Gabriel Bautista', '09312345678', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(421, 481, '2025071', '202500000071', 'New', 'Pending Payment', 'Fortunato', 'Navarro', 'Cordero', NULL, 'Male', '2014-01-10', 'Manila', 'Catholic', '624 Hibiscus Street, Manila', '624 Hibiscus Street, Manila', 416, 488, 608, 'Rafael Navarro', '09323456789', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(422, 482, '2025072', '202500000072', 'New', 'Pending Payment', 'Guadalupe', 'Valdez', 'Gutierrez', NULL, 'Female', '2014-05-15', 'Quezon City', 'Catholic', '791 Dahlia Avenue, Quezon City', '791 Dahlia Avenue, Quezon City', 417, 489, 609, 'Samuel Valdez', '09334567890', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(423, 483, '2025073', '202500000073', 'New', 'Pending Payment', 'Leoncio', 'Aguilar', 'Herrera', NULL, 'Male', '2014-09-20', 'Pasig City', 'Catholic', '135 Petunia Road, Pasig City', '135 Petunia Road, Pasig City', 418, 490, 610, 'Benjamin Aguilar', '09345678901', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(424, 484, '2025074', '202500000074', 'New', 'Pending Payment', 'Inmaculada', 'Velasco', 'Romero', NULL, 'Female', '2014-03-25', 'Makati City', 'Catholic', '802 Violet Lane, Makati City', '802 Violet Lane, Makati City', 419, 491, 611, 'Nicolas Velasco', '09356789012', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(425, 485, '2025075', '202500000075', 'New', 'Pending Payment', 'Teodulo', 'Castillo', 'Vargas', NULL, 'Male', '2014-07-30', 'Taguig City', 'Catholic', '147 Marigold Drive, Taguig City', '147 Marigold Drive, Taguig City', 420, 492, 612, 'Adrian Castillo', '09367890123', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(426, 486, '2025076', '202500000076', 'New', 'Pending Payment', 'Presentacion', 'Medina', 'Peña', NULL, 'Female', '2014-11-14', 'Paranaque City', 'Catholic', '258 Poppy Court, Paranaque City', '258 Poppy Court, Paranaque City', 421, 493, 613, 'Victor Medina', '09378901234', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(427, 487, '2025077', '202500000077', 'New', 'Pending Payment', 'Ambrosio', 'Guerrero', 'Dominguez', NULL, 'Male', '2014-04-18', 'Las Pinas City', 'Catholic', '369 Azalea Street, Las Pinas City', '369 Azalea Street, Las Pinas City', 422, 494, 614, 'Alejandro Guerrero', '09389012345', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(428, 488, '2025078', '202500000078', 'New', 'Pending Payment', 'Visitacion', 'Campos', 'Silva', NULL, 'Female', '2014-08-22', 'Muntinlupa City', 'Catholic', '741 Chrysanthemum Avenue, Muntinlupa City', '741 Chrysanthemum Avenue, Muntinlupa City', 423, 495, 615, 'Francisco Campos', '09390123456', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(429, 489, '2025079', '202500000079', 'New', 'Pending Payment', 'Primitivo', 'Ortega', 'Ponce', NULL, 'Male', '2014-12-26', 'Marikina City', 'Catholic', '852 Freesia Road, Marikina City', '852 Freesia Road, Marikina City', 424, 496, 616, 'Diego Ortega', '09401234567', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(430, 490, '2025080', '202500000080', 'New', 'Pending Payment', 'Salvacion', 'Lozano', 'Cervantes', NULL, 'Female', '2014-06-30', 'Pasay City', 'Catholic', '963 Cosmos Lane, Pasay City', '963 Cosmos Lane, Pasay City', 425, 497, 617, 'Jorge Lozano', '09412345678', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(431, 491, '2025081', '202500000081', 'New', 'Pending Payment', 'Domingo', 'Espinoza', 'Delgado', NULL, 'Male', '2013-02-14', 'Manila', 'Catholic', '159 Begonia Street, Manila', '159 Begonia Street, Manila', 426, 498, 618, 'Raul Espinoza', '09423456789', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(432, 492, '2025082', '202500000082', 'New', 'Pending Payment', 'Socorro', 'Molina', 'Fuentes', NULL, 'Female', '2013-06-18', 'Quezon City', 'Catholic', '753 Camellia Avenue, Quezon City', '753 Camellia Avenue, Quezon City', 427, 499, 619, 'Sergio Molina', '09434567890', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(433, 493, '2025083', '202500000083', 'New', 'Pending Payment', 'Eusebio', 'Pacheco', 'Sandoval', NULL, 'Male', '2013-10-22', 'Pasig City', 'Catholic', '486 Gladiolus Road, Pasig City', '486 Gladiolus Road, Pasig City', 428, 500, 620, 'Arturo Pacheco', '09445678901', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(434, 494, '2025084', '202500000084', 'New', 'Pending Payment', 'Milagros', 'Figueroa', 'Escobar', NULL, 'Female', '2013-04-26', 'Makati City', 'Catholic', '357 Snapdragon Lane, Makati City', '357 Snapdragon Lane, Makati City', 429, 501, 621, 'Ignacio Figueroa', '09456789012', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(435, 495, '2025085', '202500000085', 'New', 'Pending Payment', 'Prudencio', 'Contreras', 'Galvan', NULL, 'Male', '2013-08-30', 'Taguig City', 'Catholic', '624 Carnation Drive, Taguig City', '624 Carnation Drive, Taguig City', 430, 502, 622, 'Emilio Contreras', '09467890123', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(436, 496, '2025086', '202500000086', 'New', 'Pending Payment', 'Conception', 'Maldonado', 'Barrera', NULL, 'Female', '2013-12-14', 'Paranaque City', 'Catholic', '791 Peony Court, Paranaque City', '791 Peony Court, Paranaque City', 431, 503, 623, 'Rodrigo Maldonado', '09478901234', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(437, 497, '2025087', '202500000087', 'New', 'Pending Payment', 'Eufemio', 'Acosta', 'Cabrera', NULL, 'Male', '2013-03-18', 'Las Pinas City', 'Catholic', '135 Geranium Street, Las Pinas City', '135 Geranium Street, Las Pinas City', 432, 504, 624, 'Armando Acosta', '09489012345', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(438, 498, '2025088', '202500000088', 'New', 'Pending Payment', 'Remedios', 'Vega', 'Cortez', NULL, 'Female', '2013-07-22', 'Muntinlupa City', 'Catholic', '802 Aster Avenue, Muntinlupa City', '802 Aster Avenue, Muntinlupa City', 433, 505, 625, 'Esteban Vega', '09490123456', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(439, 499, '2025089', '202500000089', 'New', 'Pending Payment', 'Clementino', 'Rojas', 'Moreno', NULL, 'Male', '2013-11-26', 'Marikina City', 'Catholic', '147 Pansy Road, Marikina City', '147 Pansy Road, Marikina City', 434, 506, 626, 'Cesar Rojas', '09501234567', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(440, 500, '2025090', '202500000090', 'New', 'Pending Payment', 'Soledad', 'Perez', 'Soto', NULL, 'Female', '2013-05-30', 'Pasay City', 'Catholic', '258 Daffodil Lane, Pasay City', '258 Daffodil Lane, Pasay City', 435, 507, 627, 'Ruben Perez', '09512345678', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(441, 501, '2025091', '202500000091', 'New', 'Pending Payment', 'Genaro', 'Carrasco', 'Restrepo', NULL, 'Male', '2012-01-12', 'Manila', 'Catholic', '369 Tulip Street, Manila', '369 Tulip Street, Manila', 436, 508, 628, 'Andres Carrasco', '09523456789', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(442, 502, '2025092', '202500000092', 'New', 'Pending Payment', 'Filomena', 'Zuniga', 'Osorio', NULL, 'Female', '2012-05-16', 'Quezon City', 'Catholic', '741 Iris Avenue, Quezon City', '741 Iris Avenue, Quezon City', 437, 509, 629, 'Mauricio Zuniga', '09534567890', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(443, 503, '2025093', '202500000093', 'New', 'Pending Payment', 'Honorio', 'Varela', 'Calderon', NULL, 'Male', '2012-09-20', 'Pasig City', 'Catholic', '852 Lavender Road, Pasig City', '852 Lavender Road, Pasig City', 438, 510, 630, 'Hector Varela', '09545678901', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(444, 504, '2025094', '202500000094', 'New', 'Pending Payment', 'Perpetua', 'Hidalgo', 'Espejo', NULL, 'Female', '2012-03-24', 'Makati City', 'Catholic', '963 Jasmine Lane, Makati City', '963 Jasmine Lane, Makati City', 439, 511, 631, 'Oscar Hidalgo', '09556789012', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(445, 505, '2025095', '202500000095', 'New', 'Pending Payment', 'Isidoro', 'Pantoja', 'Uribe', NULL, 'Male', '2012-07-28', 'Taguig City', 'Catholic', '159 Zinnia Drive, Taguig City', '159 Zinnia Drive, Taguig City', 440, 512, 632, 'Marco Pantoja', '09567890123', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(446, 506, '2025096', '202500000096', 'New', 'Pending Payment', 'Consolacion', 'Quintero', 'Benitez', NULL, 'Female', '2012-11-12', 'Paranaque City', 'Catholic', '753 Cosmos Court, Paranaque City', '753 Cosmos Court, Paranaque City', 441, 513, 633, 'Luis Quintero', '09578901234', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(447, 507, '2025097', '202500000097', 'New', 'Pending Payment', 'Macario', 'Camacho', 'Palacios', NULL, 'Male', '2012-04-16', 'Las Pinas City', 'Catholic', '486 Lily Street, Las Pinas City', '486 Lily Street, Las Pinas City', 442, 514, 634, 'Pablo Camacho', '09589012345', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(448, 508, '2025098', '202500000098', 'New', 'Pending Payment', 'Caridad', 'Cardenas', 'Montoya', NULL, 'Female', '2012-08-20', 'Muntinlupa City', 'Catholic', '357 Sunflower Avenue, Muntinlupa City', '357 Sunflower Avenue, Muntinlupa City', 443, 515, 635, 'Enrique Cardenas', '09590123456', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(449, 509, '2025099', '202500000099', 'New', 'Pending Payment', 'Nemesio', 'Solis', 'Villalobos', NULL, 'Male', '2012-12-24', 'Marikina City', 'Catholic', '624 Magnolia Road, Marikina City', '624 Magnolia Road, Marikina City', 444, 516, 636, 'Javier Solis', '09601234567', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(450, 510, '2025100', '202500000100', 'New', 'Pending Payment', 'Epifania', 'Ibarra', 'Aranda', NULL, 'Female', '2012-06-28', 'Pasay City', 'Catholic', '791 Orchid Lane, Pasay City', '791 Orchid Lane, Pasay City', 445, 517, 637, 'Mario Ibarra', '09612345678', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(451, 511, '2025101', '202500000101', 'New', 'Pending Payment', 'Evaristo', 'Meza', 'Coronado', NULL, 'Male', '2011-02-08', 'Manila', 'Catholic', '135 Dahlia Street, Manila', '135 Dahlia Street, Manila', 446, 518, 638, 'Felipe Meza', '09623456789', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(452, 512, '2025102', '202500000102', 'New', 'Pending Payment', 'Felicitas', 'Cano', 'Avalos', NULL, 'Female', '2011-06-12', 'Quezon City', 'Catholic', '802 Petunia Avenue, Quezon City', '802 Petunia Avenue, Quezon City', 447, 519, 639, 'Alvaro Cano', '09634567890', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(453, 513, '2025103', '202500000103', 'New', 'Pending Payment', 'Melquiades', 'Ochoa', 'Bermudez', NULL, 'Male', '2011-10-16', 'Pasig City', 'Catholic', '147 Hibiscus Road, Pasig City', '147 Hibiscus Road, Pasig City', 448, 520, 640, 'Guillermo Ochoa', '09645678901', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(454, 514, '2025104', '202500000104', 'New', 'Pending Payment', 'Candelaria', 'Paredes', 'Casillas', NULL, 'Female', '2011-04-20', 'Makati City', 'Catholic', '258 Freesia Lane, Makati City', '258 Freesia Lane, Makati City', 449, 521, 641, 'Jaime Paredes', '09656789012', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(455, 515, '2025105', '202500000105', 'New', 'Pending Payment', 'Apolinario', 'Cruz', 'Santos', NULL, 'Male', '2011-08-24', 'Taguig City', 'Catholic', '369 Marigold Drive, Taguig City', '369 Marigold Drive, Taguig City', 450, 522, 642, 'Juan Cruz', '09171234567', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(456, 516, '2025106', '202500000106', 'New', 'Pending Payment', 'Encarnacion', 'Reyes', 'Garcia', NULL, 'Female', '2011-12-28', 'Paranaque City', 'Catholic', '741 Gladiolus Court, Paranaque City', '741 Gladiolus Court, Paranaque City', 451, 523, 643, 'Jose Reyes', '09182345678', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(457, 517, '2025107', '202500000107', 'New', 'Pending Payment', 'Bartolome', 'Santos', 'Lopez', NULL, 'Male', '2011-05-12', 'Las Pinas City', 'Catholic', '852 Chrysanthemum Street, Las Pinas City', '852 Chrysanthemum Street, Las Pinas City', 452, 524, 644, 'Antonio Santos', '09193456789', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(458, 518, '2025108', '202500000108', 'New', 'Pending Payment', 'Esperanza', 'Gonzales', 'Martinez', NULL, 'Female', '2011-09-16', 'Muntinlupa City', 'Catholic', '963 Azalea Avenue, Muntinlupa City', '963 Azalea Avenue, Muntinlupa City', 453, 525, 645, 'Pedro Gonzales', '09204567890', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(459, 519, '2025109', '202500000109', 'New', 'Pending Payment', 'Sinforoso', 'Hernandez', 'Rivera', NULL, 'Male', '2011-01-20', 'Marikina City', 'Catholic', '159 Begonia Road, Marikina City', '159 Begonia Road, Marikina City', 454, 526, 646, 'Miguel Hernandez', '09215678901', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(460, 520, '2025110', '202500000110', 'New', 'Pending Payment', 'Remedios', 'Lopez', 'Torres', NULL, 'Female', '2011-07-24', 'Pasay City', 'Catholic', '486 Camellia Lane, Pasay City', '486 Camellia Lane, Pasay City', 455, 527, 647, 'Carlos Lopez', '09226789012', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(461, 521, '2025111', '202500000111', 'New', 'Pending Payment', 'Floriano', 'Martinez', 'Flores', NULL, 'Male', '2010-01-05', 'Manila', 'Catholic', '753 Violet Street, Manila', '753 Violet Street, Manila', 456, 528, 648, 'Roberto Martinez', '09237890123', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(462, 522, '2025112', '202500000112', 'New', 'Pending Payment', 'Catalina', 'Torres', 'Ramos', NULL, 'Female', '2010-05-10', 'Quezon City', 'Catholic', '624 Daffodil Avenue, Quezon City', '624 Daffodil Avenue, Quezon City', 457, 529, 649, 'Fernando Torres', '09248901234', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(463, 523, '2025113', '202500000113', 'New', 'Dropped', 'Nicanor', 'Flores', 'Morales', NULL, 'Male', '2010-09-14', 'Pasig City', 'Catholic', '791 Lavender Road, Pasig City', '791 Lavender Road, Pasig City', 458, 530, 650, 'Manuel Flores', '09259012345', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:43:48'),
-(464, 524, '2025114', '202500000114', 'New', 'Transferred', 'Dionisia', 'Ramos', 'Castro', NULL, 'Female', '2010-03-18', 'Makati City', 'Catholic', '135 Jasmine Lane, Makati City', '135 Jasmine Lane, Makati City', 459, 531, 651, 'Ricardo Ramos', '09260123456', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:43:52'),
-(465, 525, '2025115', '202500000115', 'New', 'Graduated', 'Policarpo', 'Morales', 'Mendoza', NULL, 'Male', '2010-07-22', 'Taguig City', 'Catholic', '802 Poppy Drive, Taguig City', '802 Poppy Drive, Taguig City', 460, 532, 652, 'Eduardo Morales', '09271234567', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:44:00'),
-(466, 526, '2025116', '202500000116', 'New', 'Pending Payment', 'Consolacion', 'Castro', 'Jimenez', NULL, 'Female', '2010-11-26', 'Paranaque City', 'Catholic', '147 Geranium Court, Paranaque City', '147 Geranium Court, Paranaque City', 461, 533, 653, 'Alejandro Castro', '09282345678', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(467, 527, '2025117', '202500000117', 'New', 'Pending Payment', 'Anastasio', 'Dela Rosa', 'Villanueva', NULL, 'Male', '2010-04-30', 'Las Pinas City', 'Catholic', '258 Snapdragon Street, Las Pinas City', '258 Snapdragon Street, Las Pinas City', 462, 534, 654, 'Daniel Dela Rosa', '09301234567', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(468, 528, '2025118', '202500000118', 'New', 'Pending Payment', 'Feliciana', 'Bautista', 'Salazar', NULL, 'Female', '2010-08-14', 'Muntinlupa City', 'Catholic', '369 Carnation Avenue, Muntinlupa City', '369 Carnation Avenue, Muntinlupa City', 463, 535, 655, 'Gabriel Bautista', '09312345678', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(469, 529, '2025119', '202500000119', 'New', 'Pending Payment', 'Hermenegildo', 'Navarro', 'Cordero', NULL, 'Male', '2010-12-18', 'Marikina City', 'Catholic', '741 Peony Road, Marikina City', '741 Peony Road, Marikina City', 464, 536, 656, 'Rafael Navarro', '09323456789', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(470, 530, '2025120', '202500000120', 'New', 'Pending Payment', 'Esperanza', 'Valdez', 'Gutierrez', NULL, 'Female', '2010-06-22', 'Pasay City', 'Catholic', '852 Cosmos Lane, Pasay City', '852 Cosmos Lane, Pasay City', 465, 537, 657, 'Samuel Valdez', '09334567890', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(472, 542, '123123', NULL, 'New', 'Pending Payment', 'Alix', 'Felipe', NULL, NULL, 'Male', '2025-11-13', 'NCR', 'Catholic', 'street', 'street', 663, 664, NULL, '123', '123', '123', 4, NULL, 2, NULL, NULL, NULL, 1, 3, '2025-11-23 09:31:28', '2025-11-24 07:59:55');
+INSERT INTO `students` (`id`, `user_id`, `student_id`, `lrn`, `student_type`, `enrollment_status`, `prevent_auto_promotion`, `first_name`, `last_name`, `middle_name`, `suffix`, `gender`, `date_of_birth`, `place_of_birth`, `religion`, `present_address`, `permanent_address`, `father_id`, `mother_id`, `legal_guardian_id`, `emergency_contact_name`, `emergency_contact_number`, `emergency_contact_relationship`, `current_grade_level_id`, `current_section_id`, `current_school_year_id`, `medical_conditions`, `allergies`, `special_needs`, `is_active`, `created_by`, `created_at`, `updated_at`) VALUES
+(241, 310, '2025001', '202500000001', 'New', 'Pending Payment', NULL, 'Angelo', 'Cruz', 'Santos', NULL, 'Male', '2021-03-15', 'Manila', 'Catholic', '123 Main Street, Manila', '123 Main Street, Manila', 226, 238, 538, 'Juan Cruz', '09171234567', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(242, 311, '2025002', '202500000002', 'New', 'Pending Payment', NULL, 'Sofia', 'Reyes', 'Garcia', NULL, 'Female', '2021-07-22', 'Quezon City', 'Catholic', '456 Oak Avenue, Quezon City', '456 Oak Avenue, Quezon City', 227, 239, 539, 'Jose Reyes', '09182345678', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(243, 312, '2025003', '202500000003', 'New', 'Pending Payment', NULL, 'Gabriel', 'Santos', 'Lopez', NULL, 'Male', '2021-11-08', 'Pasig City', 'Catholic', '789 Pine Street, Pasig City', '789 Pine Street, Pasig City', 228, 240, 540, 'Antonio Santos', '09193456789', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(244, 313, '2025004', '202500000004', 'New', 'Pending Payment', NULL, 'Isabella', 'Gonzales', 'Martinez', NULL, 'Female', '2021-05-30', 'Makati City', 'Catholic', '321 Elm Road, Makati City', '321 Elm Road, Makati City', 229, 241, 541, 'Pedro Gonzales', '09204567890', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(245, 314, '2025005', '202500000005', 'New', 'Pending Payment', NULL, 'Miguel', 'Hernandez', 'Rivera', NULL, 'Male', '2021-09-12', 'Taguig City', 'Catholic', '654 Birch Lane, Taguig City', '654 Birch Lane, Taguig City', 230, 242, 542, 'Miguel Hernandez', '09215678901', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(246, 315, '2025006', '202500000006', 'New', 'Pending Payment', NULL, 'Sophia', 'Lopez', 'Torres', NULL, 'Female', '2021-01-25', 'Paranaque City', 'Catholic', '987 Cedar Drive, Paranaque City', '987 Cedar Drive, Paranaque City', 231, 243, 543, 'Carlos Lopez', '09226789012', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(247, 316, '2025007', '202500000007', 'New', 'Pending Payment', NULL, 'Lorenzo', 'Martinez', 'Flores', NULL, 'Male', '2021-04-18', 'Las Pinas City', 'Catholic', '147 Maple Court, Las Pinas City', '147 Maple Court, Las Pinas City', 232, 244, 544, 'Roberto Martinez', '09237890123', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(248, 317, '2025008', '202500000008', 'New', 'Pending Payment', NULL, 'Camila', 'Torres', 'Ramos', NULL, 'Female', '2021-12-03', 'Muntinlupa City', 'Catholic', '258 Walnut Street, Muntinlupa City', '258 Walnut Street, Muntinlupa City', 233, 245, 545, 'Fernando Torres', '09248901234', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(249, 318, '2025009', '202500000009', 'New', 'Pending Payment', NULL, 'Sebastian', 'Flores', 'Morales', NULL, 'Male', '2021-08-27', 'Marikina City', 'Catholic', '369 Aspen Avenue, Marikina City', '369 Aspen Avenue, Marikina City', 234, 246, 546, 'Manuel Flores', '09259012345', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(250, 319, '2025010', '202500000010', 'New', 'Pending Payment', NULL, 'Valentina', 'Ramos', 'Castro', NULL, 'Female', '2021-06-14', 'Pasay City', 'Catholic', '741 Spruce Road, Pasay City', '741 Spruce Road, Pasay City', 235, 247, 547, 'Ricardo Ramos', '09260123456', 'Father', 1, 6, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:40:18', '2025-11-24 07:33:42'),
+(361, 421, '2025011', '202500000011', 'New', 'Pending Payment', NULL, 'Mateo', 'Morales', 'Mendoza', NULL, 'Male', '2020-03-10', 'Caloocan City', 'Catholic', '852 Hickory Lane, Caloocan City', '852 Hickory Lane, Caloocan City', 236, 248, 548, 'Eduardo Morales', '09271234567', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(362, 422, '2025012', '202500000012', 'New', 'Pending Payment', NULL, 'Emma', 'Castro', 'Jimenez', NULL, 'Female', '2020-07-15', 'Malabon City', 'Catholic', '963 Poplar Street, Malabon City', '963 Poplar Street, Malabon City', 237, 249, 549, 'Alejandro Castro', '09282345678', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(363, 423, '2025013', '202500000013', 'New', 'Pending Payment', NULL, 'Diego', 'Cruz', 'Santos', NULL, 'Male', '2020-11-20', 'Navotas City', 'Catholic', '159 Willow Road, Navotas City', '159 Willow Road, Navotas City', 322, 358, 550, 'Daniel Dela Rosa', '09301234567', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(364, 424, '2025014', '202500000014', 'New', 'Pending Payment', NULL, 'Mia', 'Reyes', 'Garcia', NULL, 'Female', '2020-05-25', 'Valenzuela City', 'Catholic', '753 Chestnut Ave, Valenzuela City', '753 Chestnut Ave, Valenzuela City', 323, 359, 551, 'Gabriel Bautista', '09312345678', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(365, 425, '2025015', '202500000015', 'New', 'Pending Payment', NULL, 'Lucas', 'Santos', 'Lopez', NULL, 'Male', '2020-09-30', 'San Juan City', 'Catholic', '486 Sycamore Dr, San Juan City', '486 Sycamore Dr, San Juan City', 324, 360, 552, 'Rafael Navarro', '09323456789', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(366, 426, '2025016', '202500000016', 'New', 'Suspended', NULL, 'Zoe', 'Gonzales', 'Martinez', NULL, 'Female', '2020-01-12', 'Mandaluyong City', 'Catholic', '357 Magnolia St, Mandaluyong City', '357 Magnolia St, Mandaluyong City', 325, 361, 553, 'Samuel Valdez', '09334567890', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:43:43'),
+(367, 427, '2025017', '202500000017', 'New', 'Pending Payment', NULL, 'Ethan', 'Hernandez', 'Rivera', NULL, 'Male', '2020-04-08', 'Pateros', 'Catholic', '624 Dogwood Lane, Pateros', '624 Dogwood Lane, Pateros', 326, 362, 554, 'Benjamin Aguilar', '09345678901', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(368, 428, '2025018', '202500000018', 'New', 'Pending Payment', NULL, 'Aria', 'Lopez', 'Torres', NULL, 'Female', '2020-12-18', 'Marikina City', 'Catholic', '791 Redwood Road, Marikina City', '791 Redwood Road, Marikina City', 327, 363, 555, 'Nicolas Velasco', '09356789012', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(369, 429, '2025019', '202500000019', 'New', 'Pending Payment', NULL, 'Noah', 'Martinez', 'Flores', NULL, 'Male', '2020-08-22', 'Antipolo City', 'Catholic', '135 Sequoia Circle, Antipolo City', '135 Sequoia Circle, Antipolo City', 328, 364, 556, 'Adrian Castillo', '09367890123', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(370, 430, '2025020', '202500000020', 'New', 'Pending Payment', NULL, 'Luna', 'Torres', 'Ramos', NULL, 'Female', '2020-06-05', 'Cainta, Rizal', 'Catholic', '802 Bamboo Street, Cainta, Rizal', '802 Bamboo Street, Cainta, Rizal', 329, 365, 557, 'Victor Medina', '09378901234', 'Father', 2, 7, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(371, 431, '2025021', '202500000021', 'New', 'Pending Payment', NULL, 'Alexander', 'Dela Rosa', 'Villanueva', NULL, 'Male', '2019-02-15', 'Manila', 'Catholic', '123 Narra Street, Manila', '123 Narra Street, Manila', 330, 366, 558, 'Francisco Campos', '09390123456', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(372, 432, '2025022', '202500000022', 'New', 'Pending Payment', NULL, 'Victoria', 'Bautista', 'Salazar', NULL, 'Female', '2019-06-20', 'Quezon City', 'Catholic', '456 Molave Avenue, Quezon City', '456 Molave Avenue, Quezon City', 331, 367, 559, 'Diego Ortega', '09401234567', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(373, 433, '2025023', '202500000023', 'New', 'Pending Payment', NULL, 'Leonardo', 'Navarro', 'Cordero', NULL, 'Male', '2019-10-25', 'Pasig City', 'Catholic', '789 Mahogany Road, Pasig City', '789 Mahogany Road, Pasig City', 332, 368, 560, 'Jorge Lozano', '09412345678', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(374, 434, '2025024', '202500000024', 'New', 'Pending Payment', NULL, 'Angelica', 'Valdez', 'Gutierrez', NULL, 'Female', '2019-04-30', 'Makati City', 'Catholic', '321 Banyan Street, Makati City', '321 Banyan Street, Makati City', 333, 369, 561, 'Raul Espinoza', '09423456789', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(375, 435, '2025025', '202500000025', 'New', 'Pending Payment', NULL, 'Nicolas', 'Aguilar', 'Herrera', NULL, 'Male', '2019-08-14', 'Taguig City', 'Catholic', '654 Ipil Lane, Taguig City', '654 Ipil Lane, Taguig City', 334, 370, 562, 'Sergio Molina', '09434567890', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(376, 436, '2025026', '202500000026', 'New', 'Pending Payment', NULL, 'Catalina', 'Velasco', 'Romero', NULL, 'Female', '2019-12-18', 'Paranaque City', 'Catholic', '987 Acacia Drive, Paranaque City', '987 Acacia Drive, Paranaque City', 335, 371, 563, 'Arturo Pacheco', '09445678901', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(377, 437, '2025027', '202500000027', 'New', 'Pending Payment', NULL, 'Maximiliano', 'Castillo', 'Vargas', NULL, 'Male', '2019-03-22', 'Las Pinas City', 'Catholic', '147 Bamboo Court, Las Pinas City', '147 Bamboo Court, Las Pinas City', 336, 372, 564, 'Ignacio Figueroa', '09456789012', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(378, 438, '2025028', '202500000028', 'New', 'Pending Payment', NULL, 'Francesca', 'Medina', 'Peña', NULL, 'Female', '2019-07-26', 'Muntinlupa City', 'Catholic', '258 Talisay Street, Muntinlupa City', '258 Talisay Street, Muntinlupa City', 337, 373, 565, 'Emilio Contreras', '09467890123', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(379, 439, '2025029', '202500000029', 'New', 'Pending Payment', NULL, 'Santiago', 'Guerrero', 'Dominguez', NULL, 'Male', '2019-11-30', 'Marikina City', 'Catholic', '369 Bougainvillea Avenue, Marikina City', '369 Bougainvillea Avenue, Marikina City', 338, 374, 566, 'Rodrigo Maldonado', '09478901234', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(380, 440, '2025030', '202500000030', 'New', 'Pending Payment', NULL, 'Esperanza', 'Campos', 'Silva', NULL, 'Female', '2019-05-14', 'Pasay City', 'Catholic', '741 Sampaguita Road, Pasay City', '741 Sampaguita Road, Pasay City', 339, 375, 567, 'Armando Acosta', '09489012345', 'Father', 3, 8, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(381, 441, '2025031', '1123', 'New', 'Pending Payment', NULL, 'Emmanuel', 'Ortega', 'Ponce', NULL, 'Male', '2018-01-20', 'Manila', 'Catholic', '456 Rose Street, Manila', '456 Rose Street, Manila', 340, 376, 568, 'Diego Ortega', '09401234567', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(382, 442, '2025032', '202500000032', 'New', 'Pending Payment', NULL, 'Gabriella', 'Lozano', 'Cervantes', NULL, 'Female', '2018-05-25', 'Quezon City', 'Catholic', '789 Lily Avenue, Quezon City', '789 Lily Avenue, Quezon City', 341, 377, 569, 'Jorge Lozano', '09412345678', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(383, 443, '2025033', '202500000033', 'New', 'Pending Payment', NULL, 'Rafael', 'Espinoza', 'Delgado', NULL, 'Male', '2018-09-30', 'Pasig City', 'Catholic', '321 Tulip Road, Pasig City', '321 Tulip Road, Pasig City', 342, 378, 570, 'Raul Espinoza', '09423456789', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(384, 444, '2025034', '202500000034', 'New', 'Pending Payment', NULL, 'Valeria', 'Molina', 'Fuentes', NULL, 'Female', '2018-03-14', 'Makati City', 'Catholic', '654 Sunflower Lane, Makati City', '654 Sunflower Lane, Makati City', 343, 379, 571, 'Sergio Molina', '09434567890', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(385, 445, '2025035', '202500000035', 'New', 'Pending Payment', NULL, 'Rodrigo', 'Pacheco', 'Sandoval', NULL, 'Male', '2018-07-18', 'Taguig City', 'Catholic', '987 Orchid Drive, Taguig City', '987 Orchid Drive, Taguig City', 344, 380, 572, 'Arturo Pacheco', '09445678901', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(386, 446, '2025036', '202500000036', 'New', 'Pending Payment', NULL, 'Ximena', 'Figueroa', 'Escobar', NULL, 'Female', '2018-11-22', 'Paranaque City', 'Catholic', '147 Jasmine Court, Paranaque City', '147 Jasmine Court, Paranaque City', 345, 381, 573, 'Ignacio Figueroa', '09456789012', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(387, 447, '2025037', '202500000037', 'New', 'Pending Payment', NULL, 'Thiago', 'Contreras', 'Galvan', NULL, 'Male', '2018-04-26', 'Las Pinas City', 'Catholic', '258 Dahlia Street, Las Pinas City', '258 Dahlia Street, Las Pinas City', 346, 382, 574, 'Emilio Contreras', '09467890123', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(388, 448, '2025038', '202500000038', 'New', 'Pending Payment', NULL, 'Amelia', 'Maldonado', 'Barrera', NULL, 'Female', '2018-08-30', 'Muntinlupa City', 'Catholic', '369 Hibiscus Avenue, Muntinlupa City', '369 Hibiscus Avenue, Muntinlupa City', 347, 383, 575, 'Rodrigo Maldonado', '09478901234', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(389, 449, '2025039', '202500000039', 'New', 'Pending Payment', NULL, 'Fernando', 'Acosta', 'Cabrera', NULL, 'Male', '2018-12-14', 'Marikina City', 'Catholic', '741 Carnation Road, Marikina City', '741 Carnation Road, Marikina City', 348, 384, 576, 'Armando Acosta', '09489012345', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(390, 450, '2025040', '202500000040', 'New', 'Pending Payment', NULL, 'Dulce', 'Vega', 'Cortez', NULL, 'Female', '2018-06-18', 'Pasay City', 'Catholic', '852 Petunia Lane, Pasay City', '852 Petunia Lane, Pasay City', 349, 385, 577, 'Esteban Vega', '09490123456', 'Father', 4, 9, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(391, 451, '2025041', '202500000041', 'New', 'Pending Payment', NULL, 'Joaquin', 'Rojas', 'Moreno', NULL, 'Male', '2017-02-10', 'Manila', 'Catholic', '123 Violet Street, Manila', '123 Violet Street, Manila', 350, 386, 578, 'Cesar Rojas', '09501234567', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(392, 452, '2025042', '202500000042', 'New', 'Pending Payment', NULL, 'Renata', 'Perez', 'Soto', NULL, 'Female', '2017-06-15', 'Quezon City', 'Catholic', '456 Marigold Avenue, Quezon City', '456 Marigold Avenue, Quezon City', 351, 387, 579, 'Ruben Perez', '09512345678', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(393, 453, '2025043', '202500000043', 'New', 'Pending Payment', NULL, 'Adriano', 'Carrasco', 'Restrepo', NULL, 'Male', '2017-10-20', 'Pasig City', 'Catholic', '789 Chrysanthemum Road, Pasig City', '789 Chrysanthemum Road, Pasig City', 352, 388, 580, 'Andres Carrasco', '09523456789', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(394, 454, '2025044', '202500000044', 'New', 'Pending Payment', NULL, 'Esperanza', 'Zuniga', 'Osorio', NULL, 'Female', '2017-04-25', 'Makati City', 'Catholic', '321 Lavender Lane, Makati City', '321 Lavender Lane, Makati City', 353, 389, 581, 'Mauricio Zuniga', '09534567890', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(395, 455, '2025045', '202500000045', 'New', 'Pending Payment', NULL, 'Maximos', 'Varela', 'Calderon', NULL, 'Male', '2017-08-30', 'Taguig City', 'Catholic', '654 Daffodil Drive, Taguig City', '654 Daffodil Drive, Taguig City', 354, 390, 582, 'Hector Varela', '09545678901', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(396, 456, '2025046', '202500000046', 'New', 'Pending Payment', NULL, 'Soledad', 'Hidalgo', 'Espejo', NULL, 'Female', '2017-12-14', 'Paranaque City', 'Catholic', '987 Freesia Court, Paranaque City', '987 Freesia Court, Paranaque City', 355, 391, 583, 'Oscar Hidalgo', '09556789012', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(397, 457, '2025047', '202500000047', 'New', 'Pending Payment', NULL, 'Patricio', 'Pantoja', 'Uribe', NULL, 'Male', '2017-03-18', 'Las Pinas City', 'Catholic', '147 Poppy Street, Las Pinas City', '147 Poppy Street, Las Pinas City', 356, 392, 584, 'Marco Pantoja', '09567890123', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(398, 458, '2025048', '202500000048', 'New', 'Pending Payment', NULL, 'Milagros', 'Quintero', 'Benitez', NULL, 'Female', '2017-07-22', 'Muntinlupa City', 'Catholic', '258 Zinnia Avenue, Muntinlupa City', '258 Zinnia Avenue, Muntinlupa City', 357, 393, 585, 'Luis Quintero', '09578901234', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(399, 459, '2025049', '202500000049', 'New', 'Pending Payment', NULL, 'Cristobal', 'Camacho', 'Palacios', NULL, 'Male', '2017-11-26', 'Marikina City', 'Catholic', '369 Iris Road, Marikina City', '369 Iris Road, Marikina City', 394, 466, 586, 'Pablo Camacho', '09589012345', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(400, 460, '2025050', '202500000050', 'New', 'Pending Payment', NULL, 'Remedios', 'Cardenas', 'Montoya', NULL, 'Female', '2017-05-30', 'Pasay City', 'Catholic', '741 Begonia Lane, Pasay City', '741 Begonia Lane, Pasay City', 395, 467, 587, 'Enrique Cardenas', '09590123456', 'Father', 5, 10, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(401, 461, '2025051', '202500000051', 'New', 'Pending Payment', NULL, 'Agustin', 'Solis', 'Villalobos', NULL, 'Male', '2016-01-15', 'Manila', 'Catholic', '852 Camellia Street, Manila', '852 Camellia Street, Manila', 396, 468, 588, 'Javier Solis', '09601234567', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(402, 462, '2025052', '202500000052', 'New', 'Pending Payment', NULL, 'Concepcion', 'Ibarra', 'Aranda', NULL, 'Female', '2016-05-20', 'Quezon City', 'Catholic', '963 Azalea Avenue, Quezon City', '963 Azalea Avenue, Quezon City', 397, 469, 589, 'Mario Ibarra', '09612345678', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(403, 463, '2025053', '202500000053', 'New', 'Pending Payment', NULL, 'Teodoro', 'Meza', 'Coronado', NULL, 'Male', '2016-09-25', 'Pasig City', 'Catholic', '159 Geranium Road, Pasig City', '159 Geranium Road, Pasig City', 398, 470, 590, 'Felipe Meza', '09623456789', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(404, 464, '2025054', '202500000054', 'New', 'Pending Payment', NULL, 'Pilar', 'Cano', 'Avalos', NULL, 'Female', '2016-03-30', 'Makati City', 'Catholic', '753 Snapdragon Lane, Makati City', '753 Snapdragon Lane, Makati City', 399, 471, 591, 'Alvaro Cano', '09634567890', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(405, 465, '2025055', '202500000055', 'New', 'Pending Payment', NULL, 'Leopoldo', 'Ochoa', 'Bermudez', NULL, 'Male', '2016-07-14', 'Taguig City', 'Catholic', '486 Peony Drive, Taguig City', '486 Peony Drive, Taguig City', 400, 472, 592, 'Guillermo Ochoa', '09645678901', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(406, 466, '2025056', '202500000056', 'New', 'Pending Payment', NULL, 'Clementina', 'Paredes', 'Casillas', NULL, 'Female', '2016-11-18', 'Paranaque City', 'Catholic', '357 Pansy Court, Paranaque City', '357 Pansy Court, Paranaque City', 401, 473, 593, 'Jaime Paredes', '09656789012', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(407, 467, '2025057', '202500000057', 'New', 'Pending Payment', NULL, 'Evaristo', 'Cruz', 'Santos', NULL, 'Male', '2016-04-22', 'Las Pinas City', 'Catholic', '624 Cosmos Street, Las Pinas City', '624 Cosmos Street, Las Pinas City', 402, 474, 594, 'Juan Cruz', '09171234567', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(408, 468, '2025058', '202500000058', 'New', 'Pending Payment', NULL, 'Rosario', 'Reyes', 'Garcia', NULL, 'Female', '2016-08-26', 'Muntinlupa City', 'Catholic', '791 Gladiolus Avenue, Muntinlupa City', '791 Gladiolus Avenue, Muntinlupa City', 403, 475, 595, 'Jose Reyes', '09182345678', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(409, 469, '2025059', '202500000059', 'New', 'Pending Payment', NULL, 'Florencio', 'Santos', 'Lopez', NULL, 'Male', '2016-12-30', 'Marikina City', 'Catholic', '135 Aster Road, Marikina City', '135 Aster Road, Marikina City', 404, 476, 596, 'Antonio Santos', '09193456789', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(410, 470, '2025060', '202500000060', 'New', 'Pending Payment', NULL, 'Amparo', 'Gonzales', 'Martinez', NULL, 'Female', '2016-06-14', 'Pasay City', 'Catholic', '802 Carnation Lane, Pasay City', '802 Carnation Lane, Pasay City', 405, 477, 597, 'Pedro Gonzales', '09204567890', 'Father', 6, 11, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(411, 471, '2025061', '202500000061', 'New', 'Pending Payment', NULL, 'Anastacio', 'Hernandez', 'Rivera', NULL, 'Male', '2015-02-20', 'Manila', 'Catholic', '147 Lotus Street, Manila', '147 Lotus Street, Manila', 406, 478, 598, 'Miguel Hernandez', '09215678901', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(412, 472, '2025062', '202500000062', 'New', 'Pending Payment', NULL, 'Trinidad', 'Lopez', 'Torres', NULL, 'Female', '2015-06-25', 'Quezon City', 'Catholic', '258 Tulip Avenue, Quezon City', '258 Tulip Avenue, Quezon City', 407, 479, 599, 'Carlos Lopez', '09226789012', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(413, 473, '2025063', '202500000063', 'New', 'Pending Payment', NULL, 'Ireneo', 'Martinez', 'Flores', NULL, 'Male', '2015-10-30', 'Pasig City', 'Catholic', '369 Jasmine Road, Pasig City', '369 Jasmine Road, Pasig City', 408, 480, 600, 'Roberto Martinez', '09237890123', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(414, 474, '2025064', '202500000064', 'New', 'Pending Payment', NULL, 'Asuncion', 'Torres', 'Ramos', NULL, 'Female', '2015-04-14', 'Makati City', 'Catholic', '741 Magnolia Lane, Makati City', '741 Magnolia Lane, Makati City', 409, 481, 601, 'Fernando Torres', '09248901234', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(415, 475, '2025065', '202500000065', 'New', 'Pending Payment', NULL, 'Crisanto', 'Flores', 'Morales', NULL, 'Male', '2015-08-18', 'Taguig City', 'Catholic', '852 Gardenia Drive, Taguig City', '852 Gardenia Drive, Taguig City', 410, 482, 602, 'Manuel Flores', '09259012345', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(416, 476, '2025066', '202500000066', 'New', 'Pending Payment', NULL, 'Encarnacion', 'Ramos', 'Castro', NULL, 'Female', '2015-12-22', 'Paranaque City', 'Catholic', '963 Sunflower Court, Paranaque City', '963 Sunflower Court, Paranaque City', 411, 483, 603, 'Ricardo Ramos', '09260123456', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(417, 477, '2025067', '202500000067', 'New', 'Pending Payment', NULL, 'Placido', 'Morales', 'Mendoza', NULL, 'Male', '2015-03-26', 'Las Pinas City', 'Catholic', '159 Lily Street, Las Pinas City', '159 Lily Street, Las Pinas City', 412, 484, 604, 'Eduardo Morales', '09271234567', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(418, 478, '2025068', '202500000068', 'New', 'Pending Payment', NULL, 'Natividad', 'Castro', 'Jimenez', NULL, 'Female', '2015-07-30', 'Muntinlupa City', 'Catholic', '753 Rose Avenue, Muntinlupa City', '753 Rose Avenue, Muntinlupa City', 413, 485, 605, 'Alejandro Castro', '09282345678', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(419, 479, '2025069', '202500000069', 'New', 'Pending Payment', NULL, 'Basilio', 'Dela Rosa', 'Villanueva', NULL, 'Male', '2015-11-14', 'Marikina City', 'Catholic', '486 Daisy Road, Marikina City', '486 Daisy Road, Marikina City', 414, 486, 606, 'Daniel Dela Rosa', '09301234567', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(420, 480, '2025070', '202500000070', 'New', 'Pending Payment', NULL, 'Purificacion', 'Bautista', 'Salazar', NULL, 'Female', '2015-05-18', 'Pasay City', 'Catholic', '357 Orchid Lane, Pasay City', '357 Orchid Lane, Pasay City', 415, 487, 607, 'Gabriel Bautista', '09312345678', 'Father', 7, 12, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(421, 481, '2025071', '202500000071', 'New', 'Pending Payment', NULL, 'Fortunato', 'Navarro', 'Cordero', NULL, 'Male', '2014-01-10', 'Manila', 'Catholic', '624 Hibiscus Street, Manila', '624 Hibiscus Street, Manila', 416, 488, 608, 'Rafael Navarro', '09323456789', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(422, 482, '2025072', '202500000072', 'New', 'Pending Payment', NULL, 'Guadalupe', 'Valdez', 'Gutierrez', NULL, 'Female', '2014-05-15', 'Quezon City', 'Catholic', '791 Dahlia Avenue, Quezon City', '791 Dahlia Avenue, Quezon City', 417, 489, 609, 'Samuel Valdez', '09334567890', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(423, 483, '2025073', '202500000073', 'New', 'Pending Payment', NULL, 'Leoncio', 'Aguilar', 'Herrera', NULL, 'Male', '2014-09-20', 'Pasig City', 'Catholic', '135 Petunia Road, Pasig City', '135 Petunia Road, Pasig City', 418, 490, 610, 'Benjamin Aguilar', '09345678901', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(424, 484, '2025074', '202500000074', 'New', 'Pending Payment', NULL, 'Inmaculada', 'Velasco', 'Romero', NULL, 'Female', '2014-03-25', 'Makati City', 'Catholic', '802 Violet Lane, Makati City', '802 Violet Lane, Makati City', 419, 491, 611, 'Nicolas Velasco', '09356789012', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(425, 485, '2025075', '202500000075', 'New', 'Pending Payment', NULL, 'Teodulo', 'Castillo', 'Vargas', NULL, 'Male', '2014-07-30', 'Taguig City', 'Catholic', '147 Marigold Drive, Taguig City', '147 Marigold Drive, Taguig City', 420, 492, 612, 'Adrian Castillo', '09367890123', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(426, 486, '2025076', '202500000076', 'New', 'Pending Payment', NULL, 'Presentacion', 'Medina', 'Peña', NULL, 'Female', '2014-11-14', 'Paranaque City', 'Catholic', '258 Poppy Court, Paranaque City', '258 Poppy Court, Paranaque City', 421, 493, 613, 'Victor Medina', '09378901234', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(427, 487, '2025077', '202500000077', 'New', 'Pending Payment', NULL, 'Ambrosio', 'Guerrero', 'Dominguez', NULL, 'Male', '2014-04-18', 'Las Pinas City', 'Catholic', '369 Azalea Street, Las Pinas City', '369 Azalea Street, Las Pinas City', 422, 494, 614, 'Alejandro Guerrero', '09389012345', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(428, 488, '2025078', '202500000078', 'New', 'Pending Payment', NULL, 'Visitacion', 'Campos', 'Silva', NULL, 'Female', '2014-08-22', 'Muntinlupa City', 'Catholic', '741 Chrysanthemum Avenue, Muntinlupa City', '741 Chrysanthemum Avenue, Muntinlupa City', 423, 495, 615, 'Francisco Campos', '09390123456', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(429, 489, '2025079', '202500000079', 'New', 'Pending Payment', NULL, 'Primitivo', 'Ortega', 'Ponce', NULL, 'Male', '2014-12-26', 'Marikina City', 'Catholic', '852 Freesia Road, Marikina City', '852 Freesia Road, Marikina City', 424, 496, 616, 'Diego Ortega', '09401234567', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(430, 490, '2025080', '202500000080', 'New', 'Pending Payment', NULL, 'Salvacion', 'Lozano', 'Cervantes', NULL, 'Female', '2014-06-30', 'Pasay City', 'Catholic', '963 Cosmos Lane, Pasay City', '963 Cosmos Lane, Pasay City', 425, 497, 617, 'Jorge Lozano', '09412345678', 'Father', 8, 13, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(431, 491, '2025081', '202500000081', 'New', 'Pending Payment', NULL, 'Domingo', 'Espinoza', 'Delgado', NULL, 'Male', '2013-02-14', 'Manila', 'Catholic', '159 Begonia Street, Manila', '159 Begonia Street, Manila', 426, 498, 618, 'Raul Espinoza', '09423456789', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(432, 492, '2025082', '202500000082', 'New', 'Pending Payment', NULL, 'Socorro', 'Molina', 'Fuentes', NULL, 'Female', '2013-06-18', 'Quezon City', 'Catholic', '753 Camellia Avenue, Quezon City', '753 Camellia Avenue, Quezon City', 427, 499, 619, 'Sergio Molina', '09434567890', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(433, 493, '2025083', '202500000083', 'New', 'Pending Payment', NULL, 'Eusebio', 'Pacheco', 'Sandoval', NULL, 'Male', '2013-10-22', 'Pasig City', 'Catholic', '486 Gladiolus Road, Pasig City', '486 Gladiolus Road, Pasig City', 428, 500, 620, 'Arturo Pacheco', '09445678901', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(434, 494, '2025084', '202500000084', 'New', 'Pending Payment', NULL, 'Milagros', 'Figueroa', 'Escobar', NULL, 'Female', '2013-04-26', 'Makati City', 'Catholic', '357 Snapdragon Lane, Makati City', '357 Snapdragon Lane, Makati City', 429, 501, 621, 'Ignacio Figueroa', '09456789012', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(435, 495, '2025085', '202500000085', 'New', 'Pending Payment', NULL, 'Prudencio', 'Contreras', 'Galvan', NULL, 'Male', '2013-08-30', 'Taguig City', 'Catholic', '624 Carnation Drive, Taguig City', '624 Carnation Drive, Taguig City', 430, 502, 622, 'Emilio Contreras', '09467890123', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(436, 496, '2025086', '202500000086', 'New', 'Pending Payment', NULL, 'Conception', 'Maldonado', 'Barrera', NULL, 'Female', '2013-12-14', 'Paranaque City', 'Catholic', '791 Peony Court, Paranaque City', '791 Peony Court, Paranaque City', 431, 503, 623, 'Rodrigo Maldonado', '09478901234', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(437, 497, '2025087', '202500000087', 'New', 'Pending Payment', NULL, 'Eufemio', 'Acosta', 'Cabrera', NULL, 'Male', '2013-03-18', 'Las Pinas City', 'Catholic', '135 Geranium Street, Las Pinas City', '135 Geranium Street, Las Pinas City', 432, 504, 624, 'Armando Acosta', '09489012345', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(438, 498, '2025088', '202500000088', 'New', 'Pending Payment', NULL, 'Remedios', 'Vega', 'Cortez', NULL, 'Female', '2013-07-22', 'Muntinlupa City', 'Catholic', '802 Aster Avenue, Muntinlupa City', '802 Aster Avenue, Muntinlupa City', 433, 505, 625, 'Esteban Vega', '09490123456', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(439, 499, '2025089', '202500000089', 'New', 'Pending Payment', NULL, 'Clementino', 'Rojas', 'Moreno', NULL, 'Male', '2013-11-26', 'Marikina City', 'Catholic', '147 Pansy Road, Marikina City', '147 Pansy Road, Marikina City', 434, 506, 626, 'Cesar Rojas', '09501234567', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(440, 500, '2025090', '202500000090', 'New', 'Pending Payment', NULL, 'Soledad', 'Perez', 'Soto', NULL, 'Female', '2013-05-30', 'Pasay City', 'Catholic', '258 Daffodil Lane, Pasay City', '258 Daffodil Lane, Pasay City', 435, 507, 627, 'Ruben Perez', '09512345678', 'Father', 9, 14, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(441, 501, '2025091', '202500000091', 'New', 'Pending Payment', NULL, 'Genaro', 'Carrasco', 'Restrepo', NULL, 'Male', '2012-01-12', 'Manila', 'Catholic', '369 Tulip Street, Manila', '369 Tulip Street, Manila', 436, 508, 628, 'Andres Carrasco', '09523456789', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(442, 502, '2025092', '202500000092', 'New', 'Pending Payment', NULL, 'Filomena', 'Zuniga', 'Osorio', NULL, 'Female', '2012-05-16', 'Quezon City', 'Catholic', '741 Iris Avenue, Quezon City', '741 Iris Avenue, Quezon City', 437, 509, 629, 'Mauricio Zuniga', '09534567890', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(443, 503, '2025093', '202500000093', 'New', 'Pending Payment', NULL, 'Honorio', 'Varela', 'Calderon', NULL, 'Male', '2012-09-20', 'Pasig City', 'Catholic', '852 Lavender Road, Pasig City', '852 Lavender Road, Pasig City', 438, 510, 630, 'Hector Varela', '09545678901', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(444, 504, '2025094', '202500000094', 'New', 'Pending Payment', NULL, 'Perpetua', 'Hidalgo', 'Espejo', NULL, 'Female', '2012-03-24', 'Makati City', 'Catholic', '963 Jasmine Lane, Makati City', '963 Jasmine Lane, Makati City', 439, 511, 631, 'Oscar Hidalgo', '09556789012', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(445, 505, '2025095', '202500000095', 'New', 'Pending Payment', NULL, 'Isidoro', 'Pantoja', 'Uribe', NULL, 'Male', '2012-07-28', 'Taguig City', 'Catholic', '159 Zinnia Drive, Taguig City', '159 Zinnia Drive, Taguig City', 440, 512, 632, 'Marco Pantoja', '09567890123', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(446, 506, '2025096', '202500000096', 'New', 'Pending Payment', NULL, 'Consolacion', 'Quintero', 'Benitez', NULL, 'Female', '2012-11-12', 'Paranaque City', 'Catholic', '753 Cosmos Court, Paranaque City', '753 Cosmos Court, Paranaque City', 441, 513, 633, 'Luis Quintero', '09578901234', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(447, 507, '2025097', '202500000097', 'New', 'Pending Payment', NULL, 'Macario', 'Camacho', 'Palacios', NULL, 'Male', '2012-04-16', 'Las Pinas City', 'Catholic', '486 Lily Street, Las Pinas City', '486 Lily Street, Las Pinas City', 442, 514, 634, 'Pablo Camacho', '09589012345', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(448, 508, '2025098', '202500000098', 'New', 'Pending Payment', NULL, 'Caridad', 'Cardenas', 'Montoya', NULL, 'Female', '2012-08-20', 'Muntinlupa City', 'Catholic', '357 Sunflower Avenue, Muntinlupa City', '357 Sunflower Avenue, Muntinlupa City', 443, 515, 635, 'Enrique Cardenas', '09590123456', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(449, 509, '2025099', '202500000099', 'New', 'Pending Payment', NULL, 'Nemesio', 'Solis', 'Villalobos', NULL, 'Male', '2012-12-24', 'Marikina City', 'Catholic', '624 Magnolia Road, Marikina City', '624 Magnolia Road, Marikina City', 444, 516, 636, 'Javier Solis', '09601234567', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(450, 510, '2025100', '202500000100', 'New', 'Pending Payment', NULL, 'Epifania', 'Ibarra', 'Aranda', NULL, 'Female', '2012-06-28', 'Pasay City', 'Catholic', '791 Orchid Lane, Pasay City', '791 Orchid Lane, Pasay City', 445, 517, 637, 'Mario Ibarra', '09612345678', 'Father', 10, 15, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(451, 511, '2025101', '202500000101', 'New', 'Pending Payment', NULL, 'Evaristo', 'Meza', 'Coronado', NULL, 'Male', '2011-02-08', 'Manila', 'Catholic', '135 Dahlia Street, Manila', '135 Dahlia Street, Manila', 446, 518, 638, 'Felipe Meza', '09623456789', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(452, 512, '2025102', '202500000102', 'New', 'Pending Payment', NULL, 'Felicitas', 'Cano', 'Avalos', NULL, 'Female', '2011-06-12', 'Quezon City', 'Catholic', '802 Petunia Avenue, Quezon City', '802 Petunia Avenue, Quezon City', 447, 519, 639, 'Alvaro Cano', '09634567890', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(453, 513, '2025103', '202500000103', 'New', 'Pending Payment', NULL, 'Melquiades', 'Ochoa', 'Bermudez', NULL, 'Male', '2011-10-16', 'Pasig City', 'Catholic', '147 Hibiscus Road, Pasig City', '147 Hibiscus Road, Pasig City', 448, 520, 640, 'Guillermo Ochoa', '09645678901', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(454, 514, '2025104', '202500000104', 'New', 'Pending Payment', NULL, 'Candelaria', 'Paredes', 'Casillas', NULL, 'Female', '2011-04-20', 'Makati City', 'Catholic', '258 Freesia Lane, Makati City', '258 Freesia Lane, Makati City', 449, 521, 641, 'Jaime Paredes', '09656789012', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(455, 515, '2025105', '202500000105', 'New', 'Pending Payment', NULL, 'Apolinario', 'Cruz', 'Santos', NULL, 'Male', '2011-08-24', 'Taguig City', 'Catholic', '369 Marigold Drive, Taguig City', '369 Marigold Drive, Taguig City', 450, 522, 642, 'Juan Cruz', '09171234567', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(456, 516, '2025106', '202500000106', 'New', 'Pending Payment', NULL, 'Encarnacion', 'Reyes', 'Garcia', NULL, 'Female', '2011-12-28', 'Paranaque City', 'Catholic', '741 Gladiolus Court, Paranaque City', '741 Gladiolus Court, Paranaque City', 451, 523, 643, 'Jose Reyes', '09182345678', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(457, 517, '2025107', '202500000107', 'New', 'Pending Payment', NULL, 'Bartolome', 'Santos', 'Lopez', NULL, 'Male', '2011-05-12', 'Las Pinas City', 'Catholic', '852 Chrysanthemum Street, Las Pinas City', '852 Chrysanthemum Street, Las Pinas City', 452, 524, 644, 'Antonio Santos', '09193456789', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(458, 518, '2025108', '202500000108', 'New', 'Pending Payment', NULL, 'Esperanza', 'Gonzales', 'Martinez', NULL, 'Female', '2011-09-16', 'Muntinlupa City', 'Catholic', '963 Azalea Avenue, Muntinlupa City', '963 Azalea Avenue, Muntinlupa City', 453, 525, 645, 'Pedro Gonzales', '09204567890', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(459, 519, '2025109', '202500000109', 'New', 'Pending Payment', NULL, 'Sinforoso', 'Hernandez', 'Rivera', NULL, 'Male', '2011-01-20', 'Marikina City', 'Catholic', '159 Begonia Road, Marikina City', '159 Begonia Road, Marikina City', 454, 526, 646, 'Miguel Hernandez', '09215678901', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(460, 520, '2025110', '202500000110', 'New', 'Pending Payment', NULL, 'Remedios', 'Lopez', 'Torres', NULL, 'Female', '2011-07-24', 'Pasay City', 'Catholic', '486 Camellia Lane, Pasay City', '486 Camellia Lane, Pasay City', 455, 527, 647, 'Carlos Lopez', '09226789012', 'Father', 11, 16, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(461, 521, '2025111', '202500000111', 'New', 'Pending Payment', NULL, 'Floriano', 'Martinez', 'Flores', NULL, 'Male', '2010-01-05', 'Manila', 'Catholic', '753 Violet Street, Manila', '753 Violet Street, Manila', 456, 528, 648, 'Roberto Martinez', '09237890123', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(462, 522, '2025112', '202500000112', 'New', 'Pending Payment', NULL, 'Catalina', 'Torres', 'Ramos', NULL, 'Female', '2010-05-10', 'Quezon City', 'Catholic', '624 Daffodil Avenue, Quezon City', '624 Daffodil Avenue, Quezon City', 457, 529, 649, 'Fernando Torres', '09248901234', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(463, 523, '2025113', '202500000113', 'New', 'Dropped', NULL, 'Nicanor', 'Flores', 'Morales', NULL, 'Male', '2010-09-14', 'Pasig City', 'Catholic', '791 Lavender Road, Pasig City', '791 Lavender Road, Pasig City', 458, 530, 650, 'Manuel Flores', '09259012345', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:43:48'),
+(464, 524, '2025114', '202500000114', 'New', 'Transferred', NULL, 'Dionisia', 'Ramos', 'Castro', NULL, 'Female', '2010-03-18', 'Makati City', 'Catholic', '135 Jasmine Lane, Makati City', '135 Jasmine Lane, Makati City', 459, 531, 651, 'Ricardo Ramos', '09260123456', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:43:52'),
+(465, 525, '2025115', '202500000115', 'New', 'Graduated', NULL, 'Policarpo', 'Morales', 'Mendoza', NULL, 'Male', '2010-07-22', 'Taguig City', 'Catholic', '802 Poppy Drive, Taguig City', '802 Poppy Drive, Taguig City', 460, 532, 652, 'Eduardo Morales', '09271234567', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:44:00'),
+(466, 526, '2025116', '202500000116', 'New', 'Pending Payment', NULL, 'Consolacion', 'Castro', 'Jimenez', NULL, 'Female', '2010-11-26', 'Paranaque City', 'Catholic', '147 Geranium Court, Paranaque City', '147 Geranium Court, Paranaque City', 461, 533, 653, 'Alejandro Castro', '09282345678', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(467, 527, '2025117', '202500000117', 'New', 'Pending Payment', NULL, 'Anastasio', 'Dela Rosa', 'Villanueva', NULL, 'Male', '2010-04-30', 'Las Pinas City', 'Catholic', '258 Snapdragon Street, Las Pinas City', '258 Snapdragon Street, Las Pinas City', 462, 534, 654, 'Daniel Dela Rosa', '09301234567', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(468, 528, '2025118', '202500000118', 'New', 'Pending Payment', NULL, 'Feliciana', 'Bautista', 'Salazar', NULL, 'Female', '2010-08-14', 'Muntinlupa City', 'Catholic', '369 Carnation Avenue, Muntinlupa City', '369 Carnation Avenue, Muntinlupa City', 463, 535, 655, 'Gabriel Bautista', '09312345678', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(469, 529, '2025119', '202500000119', 'New', 'Pending Payment', NULL, 'Hermenegildo', 'Navarro', 'Cordero', NULL, 'Male', '2010-12-18', 'Marikina City', 'Catholic', '741 Peony Road, Marikina City', '741 Peony Road, Marikina City', 464, 536, 656, 'Rafael Navarro', '09323456789', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(470, 530, '2025120', '202500000120', 'New', 'Pending Payment', NULL, 'Esperanza', 'Valdez', 'Gutierrez', NULL, 'Female', '2010-06-22', 'Pasay City', 'Catholic', '852 Cosmos Lane, Pasay City', '852 Cosmos Lane, Pasay City', 465, 537, 657, 'Samuel Valdez', '09334567890', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
+(472, 542, '123123', NULL, 'New', 'Enrolled', NULL, 'Alix', 'Felipe', NULL, NULL, 'Male', '2025-11-13', 'NCR', 'Catholic', 'street', 'street', 663, 664, NULL, '123', '123', '123', 4, NULL, 2, NULL, NULL, NULL, 1, 3, '2025-11-23 09:31:28', '2025-12-05 12:29:52');
 
 -- --------------------------------------------------------
 
@@ -2228,68 +2233,60 @@ INSERT INTO `student_grades` (`id`, `student_id`, `subject_id`, `school_year_id`
 -- Triggers `student_grades`
 --
 DELIMITER $$
-CREATE TRIGGER `auto_promote_student_on_grade_save` AFTER INSERT ON `student_grades` FOR EACH ROW BEGIN
+CREATE TRIGGER `auto_promote_student_on_grade_save` AFTER INSERT ON `student_grades` FOR EACH ROW auto_promote_label:BEGIN
+    DECLARE student_grade_level_id INT;
+    DECLARE next_grade_level_id INT;
+    DECLARE student_enrollment_status VARCHAR(50);
+    DECLARE student_prevent_promotion TINYINT;
     DECLARE total_subjects INT;
     DECLARE passing_subjects INT;
-    DECLARE all_grades_entered INT;
-    DECLARE student_enrolled INT;
-    DECLARE current_grade_order INT;
-    DECLARE next_grade_id INT;
-    DECLARE current_sy_id INT;
+    DECLARE is_last_grade TINYINT;
     
     
-    SELECT gl.grade_order, s.current_school_year_id, s.enrollment_status = 'Enrolled'
-    INTO current_grade_order, current_sy_id, student_enrolled
-    FROM students s
-    INNER JOIN grade_levels gl ON s.current_grade_level_id = gl.id
-    WHERE s.id = NEW.student_id;
+    SELECT current_grade_level_id, enrollment_status, prevent_auto_promotion
+    INTO student_grade_level_id, student_enrollment_status, student_prevent_promotion
+    FROM students 
+    WHERE id = NEW.student_id;
     
     
-    IF student_enrolled = 1 THEN
+    IF student_prevent_promotion = 1 THEN
+        LEAVE auto_promote_label;
+    END IF;
+    
+    
+    IF student_enrollment_status = 'Enrolled' THEN
         
-        SELECT COUNT(DISTINCT c.subject_id)
-        INTO total_subjects
-        FROM curriculum c
-        INNER JOIN students s ON s.current_grade_level_id = c.grade_level_id
-        WHERE s.id = NEW.student_id
-        AND c.school_year_id = current_sy_id
-        AND c.is_required = 1;
-        
-        
-        SELECT COUNT(*)
-        INTO all_grades_entered
-        FROM student_grades sg
-        WHERE sg.student_id = NEW.student_id
-        AND sg.school_year_id = current_sy_id;
+        SELECT COUNT(*), SUM(CASE WHEN final_grade >= 75 THEN 1 ELSE 0 END)
+        INTO total_subjects, passing_subjects
+        FROM student_grades
+        WHERE student_id = NEW.student_id 
+        AND school_year_id = NEW.school_year_id;
         
         
-        SELECT COUNT(*)
-        INTO passing_subjects
-        FROM student_grades sg
-        WHERE sg.student_id = NEW.student_id
-        AND sg.school_year_id = current_sy_id
-        AND sg.final_grade >= 75;
-        
-        
-        IF all_grades_entered >= total_subjects AND passing_subjects >= total_subjects AND total_subjects > 0 THEN
+        IF total_subjects > 0 AND total_subjects = passing_subjects THEN
             
-            SELECT id INTO next_grade_id
-            FROM grade_levels
-            WHERE grade_order = current_grade_order + 1
-            AND is_active = 1
+            SELECT gl2.id, gl2.grade_order
+            INTO next_grade_level_id, is_last_grade
+            FROM grade_levels gl1
+            LEFT JOIN grade_levels gl2 ON gl2.grade_order = gl1.grade_order + 1 AND gl2.is_active = 1
+            WHERE gl1.id = student_grade_level_id
             LIMIT 1;
             
-            
-            IF next_grade_id IS NOT NULL THEN
-                UPDATE students
-                SET current_grade_level_id = next_grade_id,
-                    current_section_id = NULL,  
-                    enrollment_status = 'Pending Payment'  
+            IF next_grade_level_id IS NOT NULL THEN
+                
+                UPDATE students 
+                SET current_grade_level_id = next_grade_level_id,
+                    current_section_id = NULL,
+                    enrollment_status = 'Pending Payment',
+                    prevent_auto_promotion = NULL,
+                    updated_at = NOW()
                 WHERE id = NEW.student_id;
             ELSE
                 
-                UPDATE students
-                SET enrollment_status = 'Graduated'
+                UPDATE students 
+                SET enrollment_status = 'Graduated',
+                    prevent_auto_promotion = NULL,
+                    updated_at = NOW()
                 WHERE id = NEW.student_id;
             END IF;
         END IF;
@@ -2298,68 +2295,60 @@ END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `auto_promote_student_on_grade_update` AFTER UPDATE ON `student_grades` FOR EACH ROW BEGIN
+CREATE TRIGGER `auto_promote_student_on_grade_update` AFTER UPDATE ON `student_grades` FOR EACH ROW auto_promote_update_label:BEGIN
+    DECLARE student_grade_level_id INT;
+    DECLARE next_grade_level_id INT;
+    DECLARE student_enrollment_status VARCHAR(50);
+    DECLARE student_prevent_promotion TINYINT;
     DECLARE total_subjects INT;
     DECLARE passing_subjects INT;
-    DECLARE all_grades_entered INT;
-    DECLARE student_enrolled INT;
-    DECLARE current_grade_order INT;
-    DECLARE next_grade_id INT;
-    DECLARE current_sy_id INT;
+    DECLARE is_last_grade TINYINT;
     
     
-    SELECT gl.grade_order, s.current_school_year_id, s.enrollment_status = 'Enrolled'
-    INTO current_grade_order, current_sy_id, student_enrolled
-    FROM students s
-    INNER JOIN grade_levels gl ON s.current_grade_level_id = gl.id
-    WHERE s.id = NEW.student_id;
+    SELECT current_grade_level_id, enrollment_status, prevent_auto_promotion
+    INTO student_grade_level_id, student_enrollment_status, student_prevent_promotion
+    FROM students 
+    WHERE id = NEW.student_id;
     
     
-    IF student_enrolled = 1 THEN
+    IF student_prevent_promotion = 1 THEN
+        LEAVE auto_promote_update_label;
+    END IF;
+    
+    
+    IF student_enrollment_status = 'Enrolled' THEN
         
-        SELECT COUNT(DISTINCT c.subject_id)
-        INTO total_subjects
-        FROM curriculum c
-        INNER JOIN students s ON s.current_grade_level_id = c.grade_level_id
-        WHERE s.id = NEW.student_id
-        AND c.school_year_id = current_sy_id
-        AND c.is_required = 1;
-        
-        
-        SELECT COUNT(*)
-        INTO all_grades_entered
-        FROM student_grades sg
-        WHERE sg.student_id = NEW.student_id
-        AND sg.school_year_id = current_sy_id;
+        SELECT COUNT(*), SUM(CASE WHEN final_grade >= 75 THEN 1 ELSE 0 END)
+        INTO total_subjects, passing_subjects
+        FROM student_grades
+        WHERE student_id = NEW.student_id 
+        AND school_year_id = NEW.school_year_id;
         
         
-        SELECT COUNT(*)
-        INTO passing_subjects
-        FROM student_grades sg
-        WHERE sg.student_id = NEW.student_id
-        AND sg.school_year_id = current_sy_id
-        AND sg.final_grade >= 75;
-        
-        
-        IF all_grades_entered >= total_subjects AND passing_subjects >= total_subjects AND total_subjects > 0 THEN
+        IF total_subjects > 0 AND total_subjects = passing_subjects THEN
             
-            SELECT id INTO next_grade_id
-            FROM grade_levels
-            WHERE grade_order = current_grade_order + 1
-            AND is_active = 1
+            SELECT gl2.id, gl2.grade_order
+            INTO next_grade_level_id, is_last_grade
+            FROM grade_levels gl1
+            LEFT JOIN grade_levels gl2 ON gl2.grade_order = gl1.grade_order + 1 AND gl2.is_active = 1
+            WHERE gl1.id = student_grade_level_id
             LIMIT 1;
             
-            
-            IF next_grade_id IS NOT NULL THEN
-                UPDATE students
-                SET current_grade_level_id = next_grade_id,
-                    current_section_id = NULL,  
-                    enrollment_status = 'Pending Payment'  
+            IF next_grade_level_id IS NOT NULL THEN
+                
+                UPDATE students 
+                SET current_grade_level_id = next_grade_level_id,
+                    current_section_id = NULL,
+                    enrollment_status = 'Pending Payment',
+                    prevent_auto_promotion = NULL,
+                    updated_at = NOW()
                 WHERE id = NEW.student_id;
             ELSE
                 
-                UPDATE students
-                SET enrollment_status = 'Graduated'
+                UPDATE students 
+                SET enrollment_status = 'Graduated',
+                    prevent_auto_promotion = NULL,
+                    updated_at = NOW()
                 WHERE id = NEW.student_id;
             END IF;
         END IF;
@@ -2878,6 +2867,7 @@ CREATE TABLE `subjects` (
   `id` int NOT NULL,
   `subject_code` varchar(20) NOT NULL,
   `subject_name` varchar(200) NOT NULL,
+  `grade_level_id` int DEFAULT NULL,
   `description` text,
   `is_active` tinyint(1) DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -2888,67 +2878,67 @@ CREATE TABLE `subjects` (
 -- Dumping data for table `subjects`
 --
 
-INSERT INTO `subjects` (`id`, `subject_code`, `subject_name`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'N-LANG', 'Nursery Language Development', 'Basic language and communication skills for nursery', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(2, 'N-MATH', 'Nursery Mathematics', 'Basic number concepts and counting for nursery', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(3, 'N-SCI', 'Nursery Science Exploration', 'Basic science discovery for nursery children', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(4, 'N-ART', 'Nursery Arts and Crafts', 'Creative arts and fine motor development for nursery', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(5, 'N-PLAY', 'Nursery Play-based Learning', 'Play-based learning activities for nursery development', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(6, 'K-LANG', 'Kindergarten Language Arts', 'Reading readiness and literacy for kindergarten', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(7, 'K-MATH', 'Kindergarten Mathematics', 'Foundation mathematics for kindergarten', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(8, 'K-SCI', 'Kindergarten Science', 'Basic science exploration for kindergarten', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(9, 'K-ART', 'Kindergarten Arts', 'Creative expression and fine arts for kindergarten', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(10, 'K-SOCIAL', 'Kindergarten Social Skills', 'Social interaction and community awareness', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(11, 'G1-MATH', 'Grade 1 Mathematics', 'Basic arithmetic and number concepts for Grade 1', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(12, 'G1-ENG', 'Grade 1 English', 'English language arts for Grade 1', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(13, 'G1-FIL', 'Grade 1 Filipino', 'Filipino language for Grade 1', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(14, 'G1-SCI', 'Grade 1 Science', 'Elementary science for Grade 1', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(15, 'G1-MAPEH', 'Grade 1 MAPEH', 'Music, Arts, PE, and Health for Grade 1', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(16, 'G2-MATH', 'Grade 2 Mathematics', 'Elementary mathematics for Grade 2', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(17, 'G2-ENG', 'Grade 2 English', 'English language arts for Grade 2', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(18, 'G2-FIL', 'Grade 2 Filipino', 'Filipino language for Grade 2', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(19, 'G2-SCI', 'Grade 2 Science', 'Elementary science for Grade 2', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(20, 'G2-AP', 'Grade 2 Araling Panlipunan', 'Social studies for Grade 2', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(21, 'G3-MATH', 'Grade 3 Mathematics', 'Elementary mathematics for Grade 3', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(22, 'G3-ENG', 'Grade 3 English', 'English language arts for Grade 3', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(23, 'G3-FIL', 'Grade 3 Filipino', 'Filipino language for Grade 3', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(24, 'G3-SCI', 'Grade 3 Science', 'Elementary science for Grade 3', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(25, 'G3-ESP', 'Grade 3 ESP', 'Values education for Grade 3', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(26, 'G4-MATH', 'Grade 4 Mathematics', 'Elementary mathematics for Grade 4', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(27, 'G4-ENG', 'Grade 4 English', 'English language arts for Grade 4', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(28, 'G4-FIL', 'Grade 4 Filipino', 'Filipino language for Grade 4', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(29, 'G4-SCI', 'Grade 4 Science', 'Elementary science for Grade 4', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(30, 'G4-MAPEH', 'Grade 4 MAPEH', 'Music, Arts, PE, and Health for Grade 4', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(31, 'G5-MATH', 'Grade 5 Mathematics', 'Elementary mathematics for Grade 5', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(32, 'G5-ENG', 'Grade 5 English', 'English language arts for Grade 5', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(33, 'G5-FIL', 'Grade 5 Filipino', 'Filipino language for Grade 5', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(34, 'G5-SCI', 'Grade 5 Science', 'Elementary science for Grade 5', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(35, 'G5-AP', 'Grade 5 Araling Panlipunan', 'Social studies for Grade 5', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(36, 'G6-MATH', 'Grade 6 Mathematics', 'Elementary mathematics for Grade 6', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(37, 'G6-ENG', 'Grade 6 English', 'English language arts for Grade 6', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(38, 'G6-FIL', 'Grade 6 Filipino', 'Filipino language for Grade 6', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(39, 'G6-SCI', 'Grade 6 Science', 'Elementary science for Grade 6', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(40, 'G6-ESP', 'Grade 6 ESP', 'Values education for Grade 6', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(41, 'G7-MATH', 'Grade 7 Mathematics', 'Secondary mathematics for Grade 7', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(42, 'G7-ENG', 'Grade 7 English', 'English language and literature for Grade 7', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(43, 'G7-FIL', 'Grade 7 Filipino', 'Filipino language and literature for Grade 7', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(44, 'G7-SCI', 'Grade 7 Science', 'Integrated science for Grade 7', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(45, 'G7-AP', 'Grade 7 Araling Panlipunan', 'Social studies for Grade 7', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(46, 'G8-MATH', 'Grade 8 Mathematics', 'Secondary mathematics for Grade 8', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(47, 'G8-ENG', 'Grade 8 English', 'English language and literature for Grade 8', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(48, 'G8-FIL', 'Grade 8 Filipino', 'Filipino language and literature for Grade 8', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(49, 'G8-SCI', 'Grade 8 Science', 'Integrated science for Grade 8', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(50, 'G8-TLE', 'Grade 8 TLE', 'Technology and Livelihood Education for Grade 8', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(51, 'G9-MATH', 'Grade 9 Mathematics', 'Secondary mathematics for Grade 9', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(52, 'G9-ENG', 'Grade 9 English', 'English language and literature for Grade 9', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(53, 'G9-FIL', 'Grade 9 Filipino', 'Filipino language and literature for Grade 9', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(54, 'G9-SCI', 'Grade 9 Science', 'Integrated science for Grade 9', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(55, 'G9-ESP', 'Grade 9 ESP', 'Values education for Grade 9', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(56, 'G10-MATH', 'Grade 10 Mathematics', 'Secondary mathematics for Grade 10', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(57, 'G10-ENG', 'Grade 10 English', 'English language and literature for Grade 10', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(58, 'G10-FIL', 'Grade 10 Filipino', 'Filipino language and literature for Grade 10', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(59, 'G10-SCI', 'Grade 10 Science', 'Integrated science for Grade 10', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24'),
-(60, 'G10-MAPEH', 'Grade 10 MAPEH', 'Music, Arts, PE, and Health for Grade 10', 1, '2025-09-05 05:40:24', '2025-09-05 05:40:24');
+INSERT INTO `subjects` (`id`, `subject_code`, `subject_name`, `grade_level_id`, `description`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'N-LANG', 'Nursery Language Development', 1, 'Basic language and communication skills for nursery', 1, '2025-09-05 05:40:24', '2025-12-05 11:01:42'),
+(2, 'N-MATH', 'Nursery Mathematics', 1, 'Basic number concepts and counting for nursery', 1, '2025-09-05 05:40:24', '2025-12-05 11:01:42'),
+(3, 'N-SCI', 'Nursery Science Exploration', 1, 'Basic science discovery for nursery children', 1, '2025-09-05 05:40:24', '2025-12-05 11:01:42'),
+(4, 'N-ART', 'Nursery Arts and Crafts', 1, 'Creative arts and fine motor development for nursery', 1, '2025-09-05 05:40:24', '2025-12-05 11:01:42'),
+(5, 'N-PLAY', 'Nursery Play-based Learning', 1, 'Play-based learning activities for nursery development', 1, '2025-09-05 05:40:24', '2025-12-05 11:01:42'),
+(6, 'K-LANG', 'Kindergarten Language Arts', 2, 'Reading readiness and literacy for kindergarten', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(7, 'K-MATH', 'Kindergarten Mathematics', 2, 'Foundation mathematics for kindergarten', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(8, 'K-SCI', 'Kindergarten Science', 2, 'Basic science exploration for kindergarten', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(9, 'K-ART', 'Kindergarten Arts', 2, 'Creative expression and fine arts for kindergarten', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(10, 'K-SOCIAL', 'Kindergarten Social Skills', 2, 'Social interaction and community awareness', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(11, 'G1-MATH', 'Grade 1 Mathematics', 3, 'Basic arithmetic and number concepts for Grade 1', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(12, 'G1-ENG', 'Grade 1 English', 3, 'English language arts for Grade 1', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(13, 'G1-FIL', 'Grade 1 Filipino', 3, 'Filipino language for Grade 1', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(14, 'G1-SCI', 'Grade 1 Science', 3, 'Elementary science for Grade 1', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(15, 'G1-MAPEH', 'Grade 1 MAPEH', 3, 'Music, Arts, PE, and Health for Grade 1', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(16, 'G2-MATH', 'Grade 2 Mathematics', 4, 'Elementary mathematics for Grade 2', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(17, 'G2-ENG', 'Grade 2 English', 4, 'English language arts for Grade 2', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(18, 'G2-FIL', 'Grade 2 Filipino', 4, 'Filipino language for Grade 2', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(19, 'G2-SCI', 'Grade 2 Science', 4, 'Elementary science for Grade 2', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(20, 'G2-AP', 'Grade 2 Araling Panlipunan', 4, 'Social studies for Grade 2', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(21, 'G3-MATH', 'Grade 3 Mathematics', 5, 'Elementary mathematics for Grade 3', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(22, 'G3-ENG', 'Grade 3 English', 5, 'English language arts for Grade 3', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(23, 'G3-FIL', 'Grade 3 Filipino', 5, 'Filipino language for Grade 3', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(24, 'G3-SCI', 'Grade 3 Science', 5, 'Elementary science for Grade 3', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(25, 'G3-ESP', 'Grade 3 ESP', 5, 'Values education for Grade 3', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(26, 'G4-MATH', 'Grade 4 Mathematics', 6, 'Elementary mathematics for Grade 4', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(27, 'G4-ENG', 'Grade 4 English', 6, 'English language arts for Grade 4', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(28, 'G4-FIL', 'Grade 4 Filipino', 6, 'Filipino language for Grade 4', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(29, 'G4-SCI', 'Grade 4 Science', 6, 'Elementary science for Grade 4', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(30, 'G4-MAPEH', 'Grade 4 MAPEH', 6, 'Music, Arts, PE, and Health for Grade 4', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(31, 'G5-MATH', 'Grade 5 Mathematics', 7, 'Elementary mathematics for Grade 5', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(32, 'G5-ENG', 'Grade 5 English', 7, 'English language arts for Grade 5', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(33, 'G5-FIL', 'Grade 5 Filipino', 7, 'Filipino language for Grade 5', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(34, 'G5-SCI', 'Grade 5 Science', 7, 'Elementary science for Grade 5', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(35, 'G5-AP', 'Grade 5 Araling Panlipunan', 7, 'Social studies for Grade 5', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(36, 'G6-MATH', 'Grade 6 Mathematics', 8, 'Elementary mathematics for Grade 6', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(37, 'G6-ENG', 'Grade 6 English', 8, 'English language arts for Grade 6', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(38, 'G6-FIL', 'Grade 6 Filipino', 8, 'Filipino language for Grade 6', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(39, 'G6-SCI', 'Grade 6 Science', 8, 'Elementary science for Grade 6', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(40, 'G6-ESP', 'Grade 6 ESP', 8, 'Values education for Grade 6', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(41, 'G7-MATH', 'Grade 7 Mathematics', 9, 'Secondary mathematics for Grade 7', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(42, 'G7-ENG', 'Grade 7 English', 9, 'English language and literature for Grade 7', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(43, 'G7-FIL', 'Grade 7 Filipino', 9, 'Filipino language and literature for Grade 7', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(44, 'G7-SCI', 'Grade 7 Science', 9, 'Integrated science for Grade 7', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(45, 'G7-AP', 'Grade 7 Araling Panlipunan', 9, 'Social studies for Grade 7', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(46, 'G8-MATH', 'Grade 8 Mathematics', 10, 'Secondary mathematics for Grade 8', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(47, 'G8-ENG', 'Grade 8 English', 10, 'English language and literature for Grade 8', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(48, 'G8-FIL', 'Grade 8 Filipino', 10, 'Filipino language and literature for Grade 8', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(49, 'G8-SCI', 'Grade 8 Science', 10, 'Integrated science for Grade 8', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(50, 'G8-TLE', 'Grade 8 TLE', 10, 'Technology and Livelihood Education for Grade 8', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(51, 'G9-MATH', 'Grade 9 Mathematics', 11, 'Secondary mathematics for Grade 9', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(52, 'G9-ENG', 'Grade 9 English', 11, 'English language and literature for Grade 9', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(53, 'G9-FIL', 'Grade 9 Filipino', 11, 'Filipino language and literature for Grade 9', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(54, 'G9-SCI', 'Grade 9 Science', 11, 'Integrated science for Grade 9', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(55, 'G9-ESP', 'Grade 9 ESP', 11, 'Values education for Grade 9', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(56, 'G10-MATH', 'Grade 10 Mathematics', 12, 'Secondary mathematics for Grade 10', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(57, 'G10-ENG', 'Grade 10 English', 12, 'English language and literature for Grade 10', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(58, 'G10-FIL', 'Grade 10 Filipino', 12, 'Filipino language and literature for Grade 10', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(59, 'G10-SCI', 'Grade 10 Science', 12, 'Integrated science for Grade 10', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56'),
+(60, 'G10-MAPEH', 'Grade 10 MAPEH', 12, 'Music, Arts, PE, and Health for Grade 10', 1, '2025-09-05 05:40:24', '2025-12-05 10:59:56');
 
 -- --------------------------------------------------------
 
@@ -3463,7 +3453,8 @@ ALTER TABLE `student_payment_preferences`
 --
 ALTER TABLE `subjects`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `subject_code` (`subject_code`);
+  ADD UNIQUE KEY `subject_code` (`subject_code`),
+  ADD KEY `fk_subjects_grade_level` (`grade_level_id`);
 
 --
 -- Indexes for table `teachers`
@@ -3524,7 +3515,7 @@ ALTER TABLE `announcement_attachments`
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=194;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=198;
 
 --
 -- AUTO_INCREMENT for table `class_schedules`
@@ -3777,6 +3768,12 @@ ALTER TABLE `student_payments`
 ALTER TABLE `student_payment_preferences`
   ADD CONSTRAINT `student_payment_preferences_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `student_payment_preferences_ibfk_2` FOREIGN KEY (`payment_term_id`) REFERENCES `payment_terms` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `subjects`
+--
+ALTER TABLE `subjects`
+  ADD CONSTRAINT `fk_subjects_grade_level` FOREIGN KEY (`grade_level_id`) REFERENCES `grade_levels` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `teachers`

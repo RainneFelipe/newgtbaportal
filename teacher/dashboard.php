@@ -238,10 +238,6 @@ ob_start();
                     <span class="info-value"><?php echo htmlspecialchars($teacher_info['employee_id'] ?? 'N/A'); ?></span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Specialization:</span>
-                    <span class="info-value"><?php echo htmlspecialchars($teacher_info['specialization'] ?? 'Not specified'); ?></span>
-                </div>
-                <div class="info-item">
                     <span class="info-label">Employment Status:</span>
                     <span class="info-value"><?php echo htmlspecialchars($teacher_info['employment_status'] ?? 'N/A'); ?></span>
                 </div>

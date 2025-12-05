@@ -136,9 +136,9 @@ ob_start();
         
         <div class="dashboard-card">
             <div class="card-icon">🎓</div>
-            <h3 class="card-title">Student Promotion</h3>
-            <p class="card-description">Promote students to the next grade level for the new school year. Bulk promotion and re-enrollment management.</p>
-            <a href="student_promotion.php" class="card-link">Promote Students</a>
+            <h3 class="card-title">Prevent Auto-Promotion</h3>
+            <p class="card-description">Manage auto-promotion settings. Select students to prevent from automatic promotion despite passing grades.</p>
+            <a href="student_promotion.php" class="card-link">Manage Auto-Promotion</a>
         </div>
         
         <div class="dashboard-card">
