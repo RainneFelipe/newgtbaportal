@@ -72,6 +72,11 @@ This database schema supports a comprehensive school portal system with role-bas
 ## Student Information Fields
 - **Basic Info**: LRN (Learners Reference Number), names, gender, birth details
 - **Student Type**: Continuing/Old student or Transfer/New student
+- **Enrollment Status**: Pending Payment, Enrolled, Dropped, Suspended, Transferred, Graduated
+- **Transfer Details** (for Transferred students):
+  - School transferred to (name)
+  - Transfer date (when officially transferred)
+  - Reason for transfer (optional)
 - **Addresses**: Present and permanent addresses
 - **Guardian Info**: Complete father, mother, and legal guardian details
   - Full names, birthdays, occupations, religions

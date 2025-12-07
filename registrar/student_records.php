@@ -26,11 +26,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_status'])) {
         $student_id = $_POST['student_id'];
         $new_status = $_POST['new_status'];
         
-        $update_stmt = $conn->prepare("UPDATE students SET enrollment_status = ? WHERE id = ?");
-        $update_stmt->execute([$new_status, $student_id]);
+        // Check if status is "Transferred" and handle transfer details
+        if ($new_status === 'Transferred') {
+            $transferred_to_school = $_POST['transferred_to_school'] ?? null;
+            $transfer_date = $_POST['transfer_date'] ?? null;
+            $transfer_reason = $_POST['transfer_reason'] ?? null;
+            
+            // Update with transfer details and approval info
+            $update_stmt = $conn->prepare(
+                "UPDATE students 
+                 SET enrollment_status = ?, 
+                     transferred_to_school = ?, 
+                     transfer_date = ?, 
+                     transfer_reason = ?,
+                     transfer_approved_by = ?,
+                     transfer_approved_at = NOW()
+                 WHERE id = ?"
+            );
+            $update_stmt->execute([
+                $new_status, 
+                $transferred_to_school, 
+                $transfer_date, 
+                $transfer_reason,
+                $_SESSION['user_id'],
+                $student_id
+            ]);
+            
+            $audit_details = "Changed enrollment status to: $new_status";
+            if ($transferred_to_school) {
+                $audit_details .= " | Transferred to: $transferred_to_school";
+            }
+            if ($transfer_date) {
+                $audit_details .= " | Transfer Date: $transfer_date";
+            }
+        } else {
+            // Regular status update without transfer details
+            $update_stmt = $conn->prepare("UPDATE students SET enrollment_status = ? WHERE id = ?");
+            $update_stmt->execute([$new_status, $student_id]);
+            
+            $audit_details = "Changed enrollment status to: $new_status";
+        }
         
         // Log the action
-        $user->logAudit($_SESSION['user_id'], 'Student Status Change', 'students', $student_id, "Changed enrollment status to: $new_status");
+        $user->logAudit($_SESSION['user_id'], 'Student Status Change', 'students', $student_id, $audit_details);
         
         $_SESSION['success_message'] = 'Student status updated successfully!';
         header('Location: student_records.php');
@@ -97,12 +135,14 @@ $sql = "SELECT s.*,
                sec.section_name,
                sy.year_label,
                u.email,
+               approver.username as approved_by_username,
                CONCAT(s.first_name, ' ', IFNULL(CONCAT(s.middle_name, ' '), ''), s.last_name) as full_name
         FROM students s 
         LEFT JOIN grade_levels gl ON s.current_grade_level_id = gl.id
         LEFT JOIN sections sec ON s.current_section_id = sec.id 
         LEFT JOIN school_years sy ON s.current_school_year_id = sy.id
         LEFT JOIN users u ON s.user_id = u.id
+        LEFT JOIN users approver ON s.transfer_approved_by = approver.id
         $where_clause 
         ORDER BY s.created_at DESC 
         LIMIT $limit OFFSET $offset";
@@ -312,7 +352,15 @@ include '../includes/header.php';
                                 </td>
                                 <td class="actions">
                                     <div class="action-buttons">
-                                        <button class="btn btn-sm btn-warning" onclick="changeStatus(<?php echo $student['id']; ?>, '<?php echo htmlspecialchars($student['enrollment_status']); ?>')" title="Change Status">
+                                        <button class="btn btn-sm btn-warning" 
+                                                onclick='changeStatus(<?php echo $student['id']; ?>, "<?php echo htmlspecialchars($student['enrollment_status'], ENT_QUOTES); ?>", <?php echo htmlspecialchars(json_encode([
+                                                    'transferred_to_school' => $student['transferred_to_school'],
+                                                    'transfer_date' => $student['transfer_date'],
+                                                    'transfer_reason' => $student['transfer_reason'],
+                                                    'approved_by_username' => $student['approved_by_username'],
+                                                    'transfer_approved_at' => $student['transfer_approved_at']
+                                                ]), ENT_QUOTES); ?>)' 
+                                                title="Change Status">
                                             <i class="fas fa-exchange-alt"></i>
                                         </button>
                                         <button class="btn btn-sm btn-primary" onclick="editStudent(<?php echo $student['id']; ?>)" title="Edit">
@@ -1100,9 +1148,34 @@ include '../includes/header.php';
                 <div style="padding: 1rem; background: var(--light-blue); border-radius: 10px; font-weight: 600; color: var(--primary-blue);" id="current_status_display"></div>
             </div>
             
+            <!-- Current Transfer Details (shown when already transferred) -->
+            <div id="currentTransferDetailsSection" style="display: none; margin-bottom: 1.5rem; padding: 1.5rem; background: #fff3cd; border-radius: 12px; border-left: 4px solid #ffc107;">
+                <h4 style="margin: 0 0 1rem 0; color: #856404; font-size: 1.1rem;">
+                    <i class="fas fa-info-circle"></i> Current Transfer Information
+                </h4>
+                <div style="display: grid; gap: 0.75rem;">
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #856404; font-size: 0.9rem; margin-bottom: 0.25rem;">Transferred To:</label>
+                        <span id="current_transferred_to_school" style="color: #333; font-size: 0.95rem;">-</span>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #856404; font-size: 0.9rem; margin-bottom: 0.25rem;">Transfer Date:</label>
+                        <span id="current_transfer_date" style="color: #333; font-size: 0.95rem;">-</span>
+                    </div>
+                    <div id="current_transfer_reason_container" style="display: none;">
+                        <label style="display: block; font-weight: 600; color: #856404; font-size: 0.9rem; margin-bottom: 0.25rem;">Reason:</label>
+                        <span id="current_transfer_reason" style="color: #333; font-size: 0.95rem;">-</span>
+                    </div>
+                    <div id="current_approved_by_container" style="display: none;">
+                        <label style="display: block; font-weight: 600; color: #856404; font-size: 0.9rem; margin-bottom: 0.25rem;">Approved By:</label>
+                        <span id="current_approved_by" style="color: #333; font-size: 0.95rem;">-</span>
+                    </div>
+                </div>
+            </div>
+            
             <div style="margin-bottom: 2rem;">
                 <label style="display: block; margin-bottom: 0.75rem; color: var(--dark-blue); font-weight: 600;">New Status:</label>
-                <select name="new_status" id="new_status" required style="width: 100%; padding: 1rem; border: 2px solid var(--border-gray); border-radius: 12px; font-size: 1rem;">
+                <select name="new_status" id="new_status" required onchange="toggleTransferFields()" style="width: 100%; padding: 1rem; border: 2px solid var(--border-gray); border-radius: 12px; font-size: 1rem;">
                     <option value="">Select New Status</option>
                     <option value="Pending Payment">Pending Payment</option>
                     <option value="Enrolled">Enrolled</option>
@@ -1111,6 +1184,38 @@ include '../includes/header.php';
                     <option value="Transferred">Transferred</option>
                     <option value="Graduated">Graduated</option>
                 </select>
+            </div>
+            
+            <!-- New Transfer Details Section (shown when Transferred is selected) -->
+            <div id="transferDetailsSection" style="display: none; margin-bottom: 2rem; padding: 1.5rem; background: var(--light-blue); border-radius: 12px; border-left: 4px solid var(--primary-blue);">
+                <h4 style="margin: 0 0 1rem 0; color: var(--dark-blue); font-size: 1.1rem;">
+                    <i class="fas fa-school"></i> Transfer Details
+                </h4>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--dark-blue); font-weight: 600;">Transferred To (School Name) *</label>
+                    <input type="text" name="transferred_to_school" id="transferred_to_school" 
+                           placeholder="Enter the name of the school"
+                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px; font-size: 0.95rem;">
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--dark-blue); font-weight: 600;">Transfer Date *</label>
+                    <input type="date" name="transfer_date" id="transfer_date" 
+                           value="<?php echo date('Y-m-d'); ?>"
+                           max="<?php echo date('Y-m-d'); ?>"
+                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px; font-size: 0.95rem;">
+                    <small style="color: var(--gray); font-size: 0.85rem; display: block; margin-top: 0.25rem;">
+                        Date when the student officially transferred
+                    </small>
+                </div>
+                
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--dark-blue); font-weight: 600;">Reason for Transfer (Optional)</label>
+                    <textarea name="transfer_reason" id="transfer_reason" rows="3"
+                              placeholder="Enter reason for transfer (e.g., family relocation, personal reasons)"
+                              style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-gray); border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                </div>
             </div>
             
             <div style="display: flex; gap: 1rem; justify-content: flex-end;">
@@ -1128,15 +1233,80 @@ include '../includes/header.php';
 </div>
 
 <script>
-function changeStatus(studentId, currentStatus) {
+function toggleTransferFields() {
+    const statusSelect = document.getElementById('new_status');
+    const transferSection = document.getElementById('transferDetailsSection');
+    const transferSchool = document.getElementById('transferred_to_school');
+    const transferDate = document.getElementById('transfer_date');
+    
+    if (statusSelect.value === 'Transferred') {
+        transferSection.style.display = 'block';
+        transferSchool.required = true;
+        transferDate.required = true;
+    } else {
+        transferSection.style.display = 'none';
+        transferSchool.required = false;
+        transferDate.required = false;
+        transferSchool.value = '';
+        transferDate.value = '<?php echo date('Y-m-d'); ?>';
+        document.getElementById('transfer_reason').value = '';
+    }
+}
+
+function changeStatus(studentId, currentStatus, transferDetails) {
     document.getElementById('change_student_id').value = studentId;
     document.getElementById('current_status_display').textContent = currentStatus;
     document.getElementById('new_status').value = '';
+    
+    // Reset new transfer fields
+    document.getElementById('transferDetailsSection').style.display = 'none';
+    document.getElementById('transferred_to_school').required = false;
+    document.getElementById('transfer_date').required = false;
+    document.getElementById('transferred_to_school').value = '';
+    document.getElementById('transfer_date').value = '<?php echo date('Y-m-d'); ?>';
+    document.getElementById('transfer_reason').value = '';
+    
+    // Show current transfer details if student is already transferred
+    const currentTransferSection = document.getElementById('currentTransferDetailsSection');
+    if (currentStatus === 'Transferred' && transferDetails) {
+        currentTransferSection.style.display = 'block';
+        
+        document.getElementById('current_transferred_to_school').textContent = 
+            transferDetails.transferred_to_school || 'Not specified';
+        
+        if (transferDetails.transfer_date) {
+            const date = new Date(transferDetails.transfer_date);
+            document.getElementById('current_transfer_date').textContent = 
+                date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        } else {
+            document.getElementById('current_transfer_date').textContent = 'Not specified';
+        }
+        
+        if (transferDetails.transfer_reason) {
+            document.getElementById('current_transfer_reason_container').style.display = 'block';
+            document.getElementById('current_transfer_reason').textContent = transferDetails.transfer_reason;
+        } else {
+            document.getElementById('current_transfer_reason_container').style.display = 'none';
+        }
+        
+        if (transferDetails.approved_by_username) {
+            document.getElementById('current_approved_by_container').style.display = 'block';
+            document.getElementById('current_approved_by').textContent = transferDetails.approved_by_username;
+        } else {
+            document.getElementById('current_approved_by_container').style.display = 'none';
+        }
+    } else {
+        currentTransferSection.style.display = 'none';
+    }
+    
     document.getElementById('changeStatusModal').style.display = 'flex';
 }
 
 function closeChangeStatusModal() {
     document.getElementById('changeStatusModal').style.display = 'none';
+    document.getElementById('changeStatusForm').reset();
+    document.getElementById('transferDetailsSection').style.display = 'none';
+    document.getElementById('currentTransferDetailsSection').style.display = 'none';
 }
 
 // Close modal when clicking outside

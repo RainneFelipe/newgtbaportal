@@ -170,6 +170,24 @@ $full_name = trim($student['first_name'] . ' ' . ($student['middle_name'] ? $stu
                         <?php echo htmlspecialchars($student['enrollment_status']); ?>
                     </span>
                 </div>
+                
+                <?php if ($student['enrollment_status'] === 'Transferred'): ?>
+                    <div class="detail-item">
+                        <label>Transferred To</label>
+                        <span><?php echo htmlspecialchars($student['transferred_to_school'] ?: 'Not specified'); ?></span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Transfer Date</label>
+                        <span><?php echo $student['transfer_date'] ? date('F d, Y', strtotime($student['transfer_date'])) : 'Not specified'; ?></span>
+                    </div>
+                    <?php if ($student['transfer_reason']): ?>
+                    <div class="detail-item full-width">
+                        <label>Transfer Reason</label>
+                        <span><?php echo htmlspecialchars($student['transfer_reason']); ?></span>
+                    </div>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
                 <div class="detail-item">
                     <label>Account Status</label>
                     <span class="status-badge status-<?php echo $student['is_active'] ? 'active' : 'inactive'; ?>">
