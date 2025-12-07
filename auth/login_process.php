@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['role_display'] = $login_result['display_name'];
             $_SESSION['permissions'] = json_decode($login_result['permissions'], true);
             $_SESSION['is_logged_in'] = true;
+            $_SESSION['privacy_policy_accepted'] = $login_result['privacy_policy_accepted'];
             
             // Redirect based on role
             switch ($login_result['role_name']) {

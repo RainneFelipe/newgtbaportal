@@ -79,5 +79,17 @@
             });
         });
     </script>
+    
+    <?php
+    // Show privacy policy modal if not accepted
+    if (isset($_SESSION['privacy_policy_accepted']) && $_SESSION['privacy_policy_accepted'] == 0) {
+        include __DIR__ . '/privacy_policy_modal.php';
+        echo "<script>
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('privacyPolicyModal').style.display = 'flex';
+            });
+        </script>";
+    }
+    ?>
 </body>
 </html>

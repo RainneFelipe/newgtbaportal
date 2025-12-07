@@ -9,6 +9,21 @@ if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
     exit();
 }
 
+// Check for privacy policy acceptance (only if not already checked in this session)
+if (!isset($_SESSION['privacy_policy_checked'])) {
+    require_once __DIR__ . '/../config/database.php';
+    
+    $database = new Database();
+    $conn = $database->connect();
+    
+    $stmt = $conn->prepare("SELECT privacy_policy_accepted FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    $_SESSION['privacy_policy_accepted'] = $user['privacy_policy_accepted'] ?? 0;
+    $_SESSION['privacy_policy_checked'] = true;
+}
+
 // Check if user has the required role
 function checkRole($required_roles) {
     if (!isset($_SESSION['role'])) {
