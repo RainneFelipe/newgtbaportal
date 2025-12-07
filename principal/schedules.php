@@ -38,15 +38,37 @@ try {
         if (isset($_POST['action'])) {
             switch ($_POST['action']) {
                 case 'create_schedule':
+                    // Log all POST data to a file for debugging
+                    file_put_contents('C:/laragon/www/newgtbaportal/temp/schedule_post_debug.txt', 
+                        date('Y-m-d H:i:s') . "\n" . 
+                        "POST DATA:\n" . print_r($_POST, true) . "\n\n",
+                        FILE_APPEND
+                    );
+                    
                     $section_id = $_POST['section_id'];
                     $schedule_type = $_POST['schedule_type']; // 'subject' or 'activity'
                     $subject_id = isset($_POST['subject_id']) ? $_POST['subject_id'] : null;
                     $activity_name = isset($_POST['activity_name']) ? trim($_POST['activity_name']) : null;
-                    $teacher_id = isset($_POST['teacher_id']) && $_POST['teacher_id'] !== '' ? $_POST['teacher_id'] : null;
-                    $day_of_week = $_POST['day_of_week'];
+                    
+                    // Get teacher_id and convert empty string to null
+                    $teacher_id = null;
+                    if (isset($_POST['teacher_id']) && $_POST['teacher_id'] !== '' && $_POST['teacher_id'] !== 'Select Teacher (Optional)') {
+                        $teacher_id = intval($_POST['teacher_id']);
+                    }
+                    
+                    $days_of_week = isset($_POST['days_of_week']) ? $_POST['days_of_week'] : [];
                     $start_time = $_POST['start_time'];
                     $end_time = $_POST['end_time'];
                     $room = trim($_POST['room']);
+                    
+                    // Log processed values
+                    file_put_contents('C:/laragon/www/newgtbaportal/temp/schedule_post_debug.txt', 
+                        "PROCESSED VALUES:\n" . 
+                        "section_id: $section_id\n" . 
+                        "teacher_id: " . ($teacher_id ? $teacher_id : 'NULL') . "\n" . 
+                        "subject_id: $subject_id\n\n",
+                        FILE_APPEND
+                    );
                     
                     // Validate based on schedule type
                     $is_valid = false;
@@ -58,30 +80,125 @@ try {
                         $subject_id = null; // Clear subject_id for activity-based schedule
                     }
                     
-                    if ($section_id && $is_valid && $day_of_week && $start_time && $end_time) {
-                        // Check for time conflicts
-                        $conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
-                                          WHERE section_id = ? AND day_of_week = ? 
-                                          AND is_active = 1
-                                          AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
-                        $conflict_stmt = $db->prepare($conflict_query);
-                        $conflict_stmt->execute([$section_id, $day_of_week, $start_time, $start_time, $end_time, $end_time]);
-                        $conflicts = $conflict_stmt->fetch(PDO::FETCH_ASSOC)['conflicts'];
+                    if ($section_id && $is_valid && !empty($days_of_week) && $start_time && $end_time) {
+                        $has_conflicts = false;
+                        $conflict_messages = [];
                         
-                        if ($conflicts > 0) {
-                            $error_message = "Time conflict detected! Another activity/subject is already scheduled for this section at this time.";
+                        // Check for conflicts on each selected day
+                        foreach ($days_of_week as $day_of_week) {
+                            // 1. Check section schedule conflicts
+                            $section_conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
+                                              WHERE section_id = ? AND day_of_week = ? 
+                                              AND is_active = 1
+                                              AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
+                            $stmt = $db->prepare($section_conflict_query);
+                            $stmt->execute([$section_id, $day_of_week, $start_time, $start_time, $end_time, $end_time]);
+                            if ($stmt->fetch(PDO::FETCH_ASSOC)['conflicts'] > 0) {
+                                $has_conflicts = true;
+                                $conflict_messages[] = "$day_of_week: Section already has a class at this time";
+                            }
+                            
+                            // 2. Check teacher schedule conflicts (if teacher assigned)
+                            if ($teacher_id) {
+                                $teacher_conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
+                                                  WHERE teacher_id = ? AND day_of_week = ? 
+                                                  AND is_active = 1
+                                                  AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
+                                $stmt = $db->prepare($teacher_conflict_query);
+                                $stmt->execute([$teacher_id, $day_of_week, $start_time, $start_time, $end_time, $end_time]);
+                                if ($stmt->fetch(PDO::FETCH_ASSOC)['conflicts'] > 0) {
+                                    $has_conflicts = true;
+                                    $conflict_messages[] = "$day_of_week: Teacher is already teaching at this time";
+                                }
+                            }
+                            
+                            // 3. Check room conflicts (if room assigned)
+                            if (!empty($room)) {
+                                $room_conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
+                                                WHERE room = ? AND day_of_week = ? 
+                                                AND is_active = 1
+                                                AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
+                                $stmt = $db->prepare($room_conflict_query);
+                                $stmt->execute([$room, $day_of_week, $start_time, $start_time, $end_time, $end_time]);
+                                if ($stmt->fetch(PDO::FETCH_ASSOC)['conflicts'] > 0) {
+                                    $has_conflicts = true;
+                                    $conflict_messages[] = "$day_of_week: Room $room is already occupied at this time";
+                                }
+                            }
+                        }
+                        
+                        if ($has_conflicts) {
+                            $error_message = "Scheduling conflicts detected:\n" . implode("\n", array_unique($conflict_messages));
                         } else {
-                            $query = "INSERT INTO class_schedules (section_id, subject_id, activity_name, teacher_id, school_year_id, day_of_week, start_time, end_time, room, created_by, created_at) 
-                                      VALUES (?, ?, ?, ?, (SELECT school_year_id FROM sections WHERE id = ?), ?, ?, ?, ?, ?, NOW())";
-                            $stmt = $db->prepare($query);
-                            if ($stmt->execute([$section_id, $subject_id, $activity_name, $teacher_id, $section_id, $day_of_week, $start_time, $end_time, $room, $_SESSION['user_id']])) {
-                                $success_message = $schedule_type === 'subject' ? "Subject schedule created successfully!" : "Activity schedule created successfully!";
-                            } else {
-                                $error_message = "Failed to create schedule.";
+                            try {
+                                // STEP 1: Assign teacher to section FIRST (before transaction)
+                                $teacher_was_assigned = false;
+                                
+                                if ($teacher_id) {
+                                    error_log("Checking if teacher $teacher_id is assigned to section $section_id");
+                                    
+                                    $check_assignment = "SELECT COUNT(*) as assigned FROM section_teachers 
+                                                         WHERE section_id = ? AND teacher_id = ? AND is_active = 1";
+                                    $stmt = $db->prepare($check_assignment);
+                                    $stmt->execute([$section_id, $teacher_id]);
+                                    $is_assigned = $stmt->fetch(PDO::FETCH_ASSOC)['assigned'] > 0;
+                                    
+                                    error_log("Teacher already assigned: " . ($is_assigned ? 'YES' : 'NO'));
+                                    
+                                    // Auto-assign teacher to section if not already assigned
+                                    if (!$is_assigned) {
+                                        error_log("Assigning teacher $teacher_id to section $section_id");
+                                        
+                                        $assign_query = "INSERT INTO section_teachers (section_id, teacher_id, is_primary, created_by) 
+                                                        VALUES (?, ?, 0, ?)";
+                                        $assign_stmt = $db->prepare($assign_query);
+                                        
+                                        if ($assign_stmt->execute([$section_id, $teacher_id, $_SESSION['user_id']])) {
+                                            $teacher_was_assigned = true;
+                                            error_log("Teacher assigned successfully!");
+                                        } else {
+                                            error_log("Failed to assign teacher: " . print_r($assign_stmt->errorInfo(), true));
+                                            throw new Exception("Failed to assign teacher to section");
+                                        }
+                                    }
+                                }
+                                
+                                // STEP 2: Create the schedules in a transaction
+                                $db->beginTransaction();
+                                
+                                error_log("Creating schedules with teacher_id: " . ($teacher_id ? $teacher_id : 'NULL'));
+                                
+                                // Insert schedule for each selected day
+                                $inserted_count = 0;
+                                foreach ($days_of_week as $day_of_week) {
+                                    $query = "INSERT INTO class_schedules (section_id, subject_id, activity_name, teacher_id, school_year_id, day_of_week, start_time, end_time, room, created_by, created_at) 
+                                              VALUES (?, ?, ?, ?, (SELECT school_year_id FROM sections WHERE id = ?), ?, ?, ?, ?, ?, NOW())";
+                                    $stmt = $db->prepare($query);
+                                    if ($stmt->execute([$section_id, $subject_id, $activity_name, $teacher_id, $section_id, $day_of_week, $start_time, $end_time, $room, $_SESSION['user_id']])) {
+                                        $inserted_count++;
+                                        error_log("Schedule inserted for $day_of_week");
+                                    } else {
+                                        error_log("Failed to insert schedule: " . print_r($stmt->errorInfo(), true));
+                                    }
+                                }
+                                
+                                $db->commit();
+                                
+                                if ($inserted_count > 0) {
+                                    $success_message = $schedule_type === 'subject' ? "Subject schedule created successfully for $inserted_count day(s)!" : "Activity schedule created successfully for $inserted_count day(s)!";
+                                    if ($teacher_id && $teacher_was_assigned) {
+                                        $success_message .= " Teacher has been assigned to this section.";
+                                    }
+                                } else {
+                                    $error_message = "Failed to create schedule.";
+                                }
+                            } catch (Exception $e) {
+                                $db->rollback();
+                                $error_message = "Error creating schedule: " . $e->getMessage();
                             }
                         }
                     } else {
-                        $error_message = "Please fill in all required fields.";
+                        $error_message = "Please fill in all required fields and select at least one day.";
                     }
                     break;
                     
@@ -109,28 +226,96 @@ try {
                     }
                     
                     if ($schedule_id && $section_id && $is_valid && $day_of_week && $start_time && $end_time) {
-                        // Check for time conflicts (excluding current schedule)
-                        $conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
+                        $has_conflicts = false;
+                        $conflict_messages = [];
+                        
+                        // 1. Check section schedule conflicts (excluding current schedule)
+                        $section_conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
                                           WHERE section_id = ? AND day_of_week = ? 
                                           AND is_active = 1 AND id != ?
                                           AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
-                        $conflict_stmt = $db->prepare($conflict_query);
-                        $conflict_stmt->execute([$section_id, $day_of_week, $schedule_id, $start_time, $start_time, $end_time, $end_time]);
-                        $conflicts = $conflict_stmt->fetch(PDO::FETCH_ASSOC)['conflicts'];
+                        $stmt = $db->prepare($section_conflict_query);
+                        $stmt->execute([$section_id, $day_of_week, $schedule_id, $start_time, $start_time, $end_time, $end_time]);
+                        if ($stmt->fetch(PDO::FETCH_ASSOC)['conflicts'] > 0) {
+                            $has_conflicts = true;
+                            $conflict_messages[] = "Section already has a class at this time";
+                        }
                         
-                        if ($conflicts > 0) {
-                            $error_message = "Time conflict detected! Another activity/subject is already scheduled for this section at this time.";
+                        // 2. Check teacher schedule conflicts (if teacher assigned, excluding current schedule)
+                        if ($teacher_id) {
+                            $teacher_conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
+                                              WHERE teacher_id = ? AND day_of_week = ? 
+                                              AND is_active = 1 AND id != ?
+                                              AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
+                            $stmt = $db->prepare($teacher_conflict_query);
+                            $stmt->execute([$teacher_id, $day_of_week, $schedule_id, $start_time, $start_time, $end_time, $end_time]);
+                            if ($stmt->fetch(PDO::FETCH_ASSOC)['conflicts'] > 0) {
+                                $has_conflicts = true;
+                                $conflict_messages[] = "Teacher is already teaching at this time";
+                            }
+                        }
+                        
+                        // 3. Check room conflicts (if room assigned, excluding current schedule)
+                        if (!empty($room)) {
+                            $room_conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
+                                            WHERE room = ? AND day_of_week = ? 
+                                            AND is_active = 1 AND id != ?
+                                            AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
+                            $stmt = $db->prepare($room_conflict_query);
+                            $stmt->execute([$room, $day_of_week, $schedule_id, $start_time, $start_time, $end_time, $end_time]);
+                            if ($stmt->fetch(PDO::FETCH_ASSOC)['conflicts'] > 0) {
+                                $has_conflicts = true;
+                                $conflict_messages[] = "Room $room is already occupied at this time";
+                            }
+                        }
+                        
+                        if ($has_conflicts) {
+                            $error_message = "Scheduling conflicts detected: " . implode(", ", $conflict_messages);
                         } else {
-                            $query = "UPDATE class_schedules SET section_id = ?, subject_id = ?, activity_name = ?, teacher_id = ?, 
-                                      school_year_id = (SELECT school_year_id FROM sections WHERE id = ?),
-                                      day_of_week = ?, start_time = ?, end_time = ?, room = ?, 
-                                      is_active = ?, updated_at = NOW()
-                                      WHERE id = ?";
-                            $stmt = $db->prepare($query);
-                            if ($stmt->execute([$section_id, $subject_id, $activity_name, $teacher_id, $section_id, $day_of_week, $start_time, $end_time, $room, $is_active, $schedule_id])) {
-                                $success_message = $schedule_type === 'subject' ? "Subject schedule updated successfully!" : "Activity schedule updated successfully!";
-                            } else {
-                                $error_message = "Failed to update schedule.";
+                            try {
+                                // FIRST: Assign teacher to section BEFORE updating schedule
+                                $is_assigned = false;
+                                if ($teacher_id) {
+                                    $check_assignment = "SELECT COUNT(*) as assigned FROM section_teachers 
+                                                         WHERE section_id = ? AND teacher_id = ? AND is_active = 1";
+                                    $stmt = $db->prepare($check_assignment);
+                                    $stmt->execute([$section_id, $teacher_id]);
+                                    $is_assigned = $stmt->fetch(PDO::FETCH_ASSOC)['assigned'] > 0;
+                                    
+                                    // Auto-assign teacher to section if not already assigned
+                                    if (!$is_assigned) {
+                                        $assign_query = "INSERT INTO section_teachers (section_id, teacher_id, is_primary, created_by) 
+                                                        VALUES (?, ?, 0, ?)";
+                                        $stmt = $db->prepare($assign_query);
+                                        if (!$stmt->execute([$section_id, $teacher_id, $_SESSION['user_id']])) {
+                                            throw new Exception("Failed to assign teacher to section");
+                                        }
+                                        $is_assigned = true;
+                                    }
+                                }
+                                
+                                // SECOND: Now update the schedule
+                                $db->beginTransaction();
+                                
+                                $query = "UPDATE class_schedules SET section_id = ?, subject_id = ?, activity_name = ?, teacher_id = ?, 
+                                          school_year_id = (SELECT school_year_id FROM sections WHERE id = ?),
+                                          day_of_week = ?, start_time = ?, end_time = ?, room = ?, 
+                                          is_active = ?, updated_at = NOW()
+                                          WHERE id = ?";
+                                $stmt = $db->prepare($query);
+                                if ($stmt->execute([$section_id, $subject_id, $activity_name, $teacher_id, $section_id, $day_of_week, $start_time, $end_time, $room, $is_active, $schedule_id])) {
+                                    $db->commit();
+                                    $success_message = $schedule_type === 'subject' ? "Subject schedule updated successfully!" : "Activity schedule updated successfully!";
+                                    if ($teacher_id && $is_assigned) {
+                                        $success_message .= " Teacher has been assigned to this section.";
+                                    }
+                                } else {
+                                    $db->rollback();
+                                    $error_message = "Failed to update schedule.";
+                                }
+                            } catch (Exception $e) {
+                                $db->rollback();
+                                $error_message = "Error updating schedule: " . $e->getMessage();
                             }
                         }
                     } else {
@@ -226,8 +411,12 @@ try {
     $stmt->execute();
     $sections = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get subjects for filters and forms
-    $query = "SELECT * FROM subjects WHERE is_active = 1 ORDER BY subject_name";
+    // Get subjects for filters and forms with grade level info
+    $query = "SELECT s.*, gl.grade_name 
+              FROM subjects s
+              LEFT JOIN grade_levels gl ON s.grade_level_id = gl.id
+              WHERE s.is_active = 1 
+              ORDER BY s.subject_name";
     $stmt = $db->prepare($query);
     $stmt->execute();
     $subjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -243,16 +432,38 @@ try {
     $stmt->execute();
     $teachers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Days of the week
+    // Get rooms for dropdowns
+    $query = "SELECT * FROM rooms WHERE is_active = 1 ORDER BY floor, room_number";
+    $stmt = $db->prepare($query);
+    $stmt->execute();
+    $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Days of the week (Monday to Friday only)
     $days_of_week = [
         'Monday' => 'Monday',
         'Tuesday' => 'Tuesday',
         'Wednesday' => 'Wednesday',
         'Thursday' => 'Thursday',
-        'Friday' => 'Friday',
-        'Saturday' => 'Saturday',
-        'Sunday' => 'Sunday'
+        'Friday' => 'Friday'
     ];
+    
+    // Generate time slots from 7:00 AM to 6:00 PM with 30-minute increments
+    $time_slots = [];
+    $start_hour = 7;
+    $end_hour = 18; // 6:00 PM in 24-hour format
+    
+    for ($hour = $start_hour; $hour <= $end_hour; $hour++) {
+        for ($minute = 0; $minute < 60; $minute += 30) {
+            if ($hour == $end_hour && $minute > 0) break; // Stop at 6:00 PM
+            
+            $time_24 = sprintf('%02d:%02d', $hour, $minute);
+            $hour_12 = ($hour > 12) ? $hour - 12 : ($hour == 0 ? 12 : $hour);
+            $am_pm = ($hour >= 12) ? 'PM' : 'AM';
+            $time_12 = sprintf('%d:%02d %s', $hour_12, $minute, $am_pm);
+            
+            $time_slots[$time_24] = $time_12;
+        }
+    }
     
 } catch (Exception $e) {
     $error_message = "Unable to load schedules data.";
@@ -594,10 +805,10 @@ ob_start();
                                     </svg>
                                     Section
                                 </label>
-                                <select id="section_id" name="section_id" class="schedule-form-select" required>
+                                <select id="section_id" name="section_id" class="schedule-form-select" required onchange="filterSubjectsBySection()">
                                     <option value="">Select Section</option>
                                     <?php foreach ($sections as $section): ?>
-                                        <option value="<?php echo $section['id']; ?>">
+                                        <option value="<?php echo $section['id']; ?>" data-grade-level="<?php echo $section['grade_level_id']; ?>">
                                             <?php echo htmlspecialchars($section['section_display']); ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -641,7 +852,7 @@ ob_start();
                                 <select id="subject_id" name="subject_id" class="schedule-form-select">
                                     <option value="">Select Subject</option>
                                     <?php foreach ($subjects as $subject): ?>
-                                        <option value="<?php echo $subject['id']; ?>">
+                                        <option value="<?php echo $subject['id']; ?>" data-grade-level="<?php echo $subject['grade_level_id']; ?>">
                                             <?php echo htmlspecialchars($subject['subject_name']); ?>
                                             <?php if ($subject['subject_code']): ?>
                                                 (<?php echo htmlspecialchars($subject['subject_code']); ?>)
@@ -724,22 +935,25 @@ ob_start();
                             Time & Location
                         </div>
                         <div class="schedule-form-grid schedule-form-grid-4">
-                            <div class="schedule-form-group">
-                                <label for="day_of_week" class="schedule-form-label required">
+                            <div class="schedule-form-group" style="grid-column: 1 / -1;">
+                                <label class="schedule-form-label required">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                                         <line x1="16" y1="2" x2="16" y2="6"/>
                                         <line x1="8" y1="2" x2="8" y2="6"/>
                                         <line x1="3" y1="10" x2="21" y2="10"/>
                                     </svg>
-                                    Day of Week
+                                    Days of Week
                                 </label>
-                                <select id="day_of_week" name="day_of_week" class="schedule-form-select" required>
-                                    <option value="">Select Day</option>
+                                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
                                     <?php foreach ($days_of_week as $day): ?>
-                                        <option value="<?php echo $day; ?>"><?php echo $day; ?></option>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="checkbox" name="days_of_week[]" value="<?php echo $day; ?>" style="width: 18px; height: 18px; cursor: pointer;">
+                                            <span style="font-size: 15px; color: #2d3748;"><?php echo $day; ?></span>
+                                        </label>
                                     <?php endforeach; ?>
-                                </select>
+                                </div>
+                                <small class="schedule-form-help">Select one or more days for this schedule</small>
                             </div>
                             
                             <div class="schedule-form-group">
@@ -750,7 +964,12 @@ ob_start();
                                     </svg>
                                     Start Time
                                 </label>
-                                <input type="time" id="start_time" name="start_time" class="schedule-form-input" required>
+                                <select id="start_time" name="start_time" class="schedule-form-select" required>
+                                    <option value="">Select Start Time</option>
+                                    <?php foreach ($time_slots as $time_24 => $time_12): ?>
+                                        <option value="<?php echo $time_24; ?>"><?php echo htmlspecialchars($time_12); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             
                             <div class="schedule-form-group">
@@ -761,7 +980,12 @@ ob_start();
                                     </svg>
                                     End Time
                                 </label>
-                                <input type="time" id="end_time" name="end_time" class="schedule-form-input" required>
+                                <select id="end_time" name="end_time" class="schedule-form-select" required>
+                                    <option value="">Select End Time</option>
+                                    <?php foreach ($time_slots as $time_24 => $time_12): ?>
+                                        <option value="<?php echo $time_24; ?>"><?php echo htmlspecialchars($time_12); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             
                             <div class="schedule-form-group">
@@ -772,7 +996,14 @@ ob_start();
                                     </svg>
                                     Room
                                 </label>
-                                <input type="text" id="room" name="room" class="schedule-form-input" placeholder="e.g. 101, A-205, Cafeteria">
+                                <select id="room" name="room" class="schedule-form-select">
+                                    <option value="">Select Room (Optional)</option>
+                                    <?php foreach ($rooms as $room): ?>
+                                        <option value="<?php echo htmlspecialchars($room['room_number']); ?>">
+                                            <?php echo htmlspecialchars($room['room_name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -816,10 +1047,10 @@ ob_start();
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="edit_section_id" class="required">Section</label>
-                        <select id="edit_section_id" name="section_id" required>
+                        <select id="edit_section_id" name="section_id" required onchange="filterSubjectsByEditSection()">
                             <option value="">Select Section</option>
                             <?php foreach ($sections as $section): ?>
-                                <option value="<?php echo $section['id']; ?>">
+                                <option value="<?php echo $section['id']; ?>" data-grade-level="<?php echo $section['grade_level_id']; ?>">
                                     <?php echo htmlspecialchars($section['section_display']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -840,7 +1071,7 @@ ob_start();
                         <select id="edit_subject_id" name="subject_id">
                             <option value="">Select Subject</option>
                             <?php foreach ($subjects as $subject): ?>
-                                <option value="<?php echo $subject['id']; ?>">
+                                <option value="<?php echo $subject['id']; ?>" data-grade-level="<?php echo $subject['grade_level_id']; ?>">
                                     <?php echo htmlspecialchars($subject['subject_name']); ?>
                                     <?php if ($subject['subject_code']): ?>
                                         (<?php echo htmlspecialchars($subject['subject_code']); ?>)
@@ -881,17 +1112,34 @@ ob_start();
                     
                     <div class="form-group">
                         <label for="edit_start_time" class="required">Start Time</label>
-                        <input type="time" id="edit_start_time" name="start_time" required>
+                        <select id="edit_start_time" name="start_time" required>
+                            <option value="">Select Start Time</option>
+                            <?php foreach ($time_slots as $time_24 => $time_12): ?>
+                                <option value="<?php echo $time_24; ?>"><?php echo htmlspecialchars($time_12); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_end_time" class="required">End Time</label>
-                        <input type="time" id="edit_end_time" name="end_time" required>
+                        <select id="edit_end_time" name="end_time" required>
+                            <option value="">Select End Time</option>
+                            <?php foreach ($time_slots as $time_24 => $time_12): ?>
+                                <option value="<?php echo $time_24; ?>"><?php echo htmlspecialchars($time_12); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     
                     <div class="form-group">
                         <label for="edit_room">Room</label>
-                        <input type="text" id="edit_room" name="room" placeholder="e.g. 101, A-205, Cafeteria">
+                        <select id="edit_room" name="room">
+                            <option value="">Select Room (Optional)</option>
+                            <?php foreach ($rooms as $room): ?>
+                                <option value="<?php echo htmlspecialchars($room['room_number']); ?>">
+                                    <?php echo htmlspecialchars($room['room_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
                 
@@ -1089,8 +1337,26 @@ function initializeFormValidation() {
     const form = document.getElementById('add-schedule-form');
     if (form) {
         form.addEventListener('submit', function(e) {
+            // Disable teacher dropdown in hidden section to prevent empty value submission
+            const scheduleType = this.querySelector('#schedule_type').value;
+            const teacherIdSubject = this.querySelector('#teacher_id');
+            const teacherIdActivity = this.querySelector('#teacher_id_activity');
+            
+            if (scheduleType === 'subject') {
+                // Using subject - disable activity teacher dropdown
+                if (teacherIdActivity) teacherIdActivity.disabled = true;
+                if (teacherIdSubject) teacherIdSubject.disabled = false;
+            } else if (scheduleType === 'activity') {
+                // Using activity - disable subject teacher dropdown
+                if (teacherIdSubject) teacherIdSubject.disabled = true;
+                if (teacherIdActivity) teacherIdActivity.disabled = false;
+            }
+            
             if (!validateScheduleForm(this)) {
                 e.preventDefault();
+                // Re-enable both in case of validation failure
+                if (teacherIdSubject) teacherIdSubject.disabled = false;
+                if (teacherIdActivity) teacherIdActivity.disabled = false;
             }
         });
     }
@@ -1264,6 +1530,110 @@ function clearFilters() {
     
     // Submit the form to clear filters
     document.querySelector('.filters-form').submit();
+}
+
+// Filter subjects based on selected section's grade level
+function filterSubjectsBySection() {
+    const sectionSelect = document.getElementById('section_id');
+    const subjectSelect = document.getElementById('subject_id');
+    
+    if (!sectionSelect || !subjectSelect) return;
+    
+    const selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+    const gradeLevel = selectedOption ? selectedOption.getAttribute('data-grade-level') : null;
+    
+    // Store current selection
+    const currentValue = subjectSelect.value;
+    
+    // Show/hide options based on grade level
+    const options = subjectSelect.querySelectorAll('option');
+    let hasVisibleOptions = false;
+    
+    options.forEach(option => {
+        if (option.value === '') {
+            // Keep the default "Select Subject" option
+            option.style.display = '';
+            return;
+        }
+        
+        const optionGradeLevel = option.getAttribute('data-grade-level');
+        
+        if (!gradeLevel || optionGradeLevel === gradeLevel) {
+            option.style.display = '';
+            hasVisibleOptions = true;
+        } else {
+            option.style.display = 'none';
+            // Clear selection if the current value is being hidden
+            if (option.value === currentValue) {
+                subjectSelect.value = '';
+            }
+        }
+    });
+    
+    // Update placeholder text if no subjects available
+    if (!hasVisibleOptions && gradeLevel) {
+        const placeholder = subjectSelect.querySelector('option[value=""]');
+        if (placeholder) {
+            placeholder.textContent = 'No subjects available for this grade level';
+        }
+    } else {
+        const placeholder = subjectSelect.querySelector('option[value=""]');
+        if (placeholder) {
+            placeholder.textContent = 'Select Subject';
+        }
+    }
+}
+
+// Filter subjects for edit modal
+function filterSubjectsByEditSection() {
+    const sectionSelect = document.getElementById('edit_section_id');
+    const subjectSelect = document.getElementById('edit_subject_id');
+    
+    if (!sectionSelect || !subjectSelect) return;
+    
+    const selectedOption = sectionSelect.options[sectionSelect.selectedIndex];
+    const gradeLevel = selectedOption ? selectedOption.getAttribute('data-grade-level') : null;
+    
+    // Store current selection
+    const currentValue = subjectSelect.value;
+    
+    // Show/hide options based on grade level
+    const options = subjectSelect.querySelectorAll('option');
+    let hasVisibleOptions = false;
+    
+    options.forEach(option => {
+        if (option.value === '') {
+            // Keep the default "Select Subject" option
+            option.style.display = '';
+            return;
+        }
+        
+        const optionGradeLevel = option.getAttribute('data-grade-level');
+        
+        if (!gradeLevel || optionGradeLevel === gradeLevel) {
+            option.style.display = '';
+            hasVisibleOptions = true;
+        } else {
+            option.style.display = 'none';
+            // Clear selection if the current value is being hidden
+            if (option.value === currentValue) {
+                subjectSelect.value = '';
+            }
+        }
+    });
+    
+    // Update placeholder text if no subjects available
+    if (!hasVisibleOptions && gradeLevel) {
+        const placeholder = subjectSelect.querySelector('option[value=""]');
+        if (placeholder) {
+            placeholder.textContent = 'No subjects available for this grade level';
+        }
+    } else {
+        const placeholder = subjectSelect.querySelector('option[value=""]');
+        if (placeholder) {
+            placeholder.textContent = 'Select Subject';
+        }
+    }
 }
 </script>
 

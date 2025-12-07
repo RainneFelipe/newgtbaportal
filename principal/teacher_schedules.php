@@ -72,7 +72,7 @@ try {
                     
                     if ($teacher_id && $is_valid && $day_of_week && $start_time && $end_time) {
                         // Check for time conflicts with this teacher
-                        $conflict_query = "SELECT COUNT(*) as conflicts FROM teacher_schedules 
+                        $conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
                                           WHERE teacher_id = ? AND day_of_week = ? 
                                           AND is_active = 1
                                           AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
@@ -83,11 +83,11 @@ try {
                         if ($conflicts > 0) {
                             $error_message = "Time conflict detected! This teacher already has a schedule at this time.";
                         } else {
-                            $query = "INSERT INTO teacher_schedules (teacher_id, subject_id, activity_name, section_id, school_year_id, day_of_week, start_time, end_time, room, notes, created_by, created_at) 
+                            $query = "INSERT INTO class_schedules (teacher_id, subject_id, activity_name, section_id, school_year_id, day_of_week, start_time, end_time, room_id, notes, created_by, created_at) 
                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
                             $stmt = $db->prepare($query);
                             if ($stmt->execute([$teacher_id, $subject_id, $activity_name, $section_id, $current_year['id'], $day_of_week, $start_time, $end_time, $room, $notes, $_SESSION['user_id']])) {
-                                $user->logAudit($_SESSION['user_id'], 'CREATE', 'teacher_schedules', null, 
+                                $user->logAudit($_SESSION['user_id'], 'CREATE', 'class_schedules', null, 
                                     "Created teacher schedule for " . ($schedule_type === 'subject' ? 'subject' : 'activity') . 
                                     " on {$day_of_week} {$start_time}-{$end_time}");
                                 $success_message = $schedule_type === 'subject' ? "Subject schedule created successfully!" : "Activity schedule created successfully!";
@@ -126,7 +126,7 @@ try {
                     
                     if ($schedule_id && $teacher_id && $is_valid && $day_of_week && $start_time && $end_time) {
                         // Check for time conflicts (excluding current schedule)
-                        $conflict_query = "SELECT COUNT(*) as conflicts FROM teacher_schedules 
+                        $conflict_query = "SELECT COUNT(*) as conflicts FROM class_schedules 
                                           WHERE teacher_id = ? AND day_of_week = ? 
                                           AND is_active = 1 AND id != ?
                                           AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))";
@@ -137,12 +137,12 @@ try {
                         if ($conflicts > 0) {
                             $error_message = "Time conflict detected! This teacher already has a schedule at this time.";
                         } else {
-                            $query = "UPDATE teacher_schedules SET teacher_id = ?, subject_id = ?, activity_name = ?, section_id = ?, 
-                                      day_of_week = ?, start_time = ?, end_time = ?, room = ?, notes = ?, is_active = ?, updated_at = NOW() 
+                            $query = "UPDATE class_schedules SET teacher_id = ?, subject_id = ?, activity_name = ?, section_id = ?, 
+                                      day_of_week = ?, start_time = ?, end_time = ?, room_id = ?, notes = ?, is_active = ?, updated_at = NOW() 
                                       WHERE id = ?";
                             $stmt = $db->prepare($query);
                             if ($stmt->execute([$teacher_id, $subject_id, $activity_name, $section_id, $day_of_week, $start_time, $end_time, $room, $notes, $is_active, $schedule_id])) {
-                                $user->logAudit($_SESSION['user_id'], 'UPDATE', 'teacher_schedules', $schedule_id, 
+                                $user->logAudit($_SESSION['user_id'], 'UPDATE', 'class_schedules', $schedule_id, 
                                     "Updated teacher schedule");
                                 $success_message = "Schedule updated successfully!";
                             } else {
@@ -157,10 +157,10 @@ try {
                 case 'delete_schedule':
                     $schedule_id = $_POST['schedule_id'];
                     if ($schedule_id) {
-                        $query = "UPDATE teacher_schedules SET is_active = 0, updated_at = NOW() WHERE id = ?";
+                        $query = "UPDATE class_schedules SET is_active = 0, updated_at = NOW() WHERE id = ?";
                         $stmt = $db->prepare($query);
                         if ($stmt->execute([$schedule_id])) {
-                            $user->logAudit($_SESSION['user_id'], 'DELETE', 'teacher_schedules', $schedule_id, 
+                            $user->logAudit($_SESSION['user_id'], 'DELETE', 'class_schedules', $schedule_id, 
                                 "Deactivated teacher schedule");
                             $success_message = "Schedule deleted successfully!";
                         } else {
@@ -172,11 +172,13 @@ try {
         }
     }
     
-    // Get all active teachers (using teacher_info view)
-    $teachers_query = "SELECT user_id as id, username, email, first_name, last_name, employee_id, full_name
-                       FROM teacher_info 
-                       WHERE user_active = 1 AND teacher_active = 1
-                       ORDER BY last_name, first_name";
+    // Get all active teachers
+    $teachers_query = "SELECT t.user_id as id, u.username, u.email, t.first_name, t.last_name, t.employee_id,
+                              CONCAT(t.first_name, ' ', t.last_name) as full_name
+                       FROM teachers t
+                       JOIN users u ON t.user_id = u.id
+                       WHERE u.is_active = 1 AND t.is_active = 1
+                       ORDER BY t.last_name, t.first_name";
     $teachers_stmt = $db->prepare($teachers_query);
     $teachers_stmt->execute();
     $teachers = $teachers_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -197,23 +199,26 @@ try {
     $sections_stmt->execute([$current_year['id']]);
     $sections = $sections_stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get all teacher schedules for current school year
-    $schedules_query = "SELECT ts.*, 
-                               ti.full_name as teacher_name,
-                               ti.username as teacher_username,
-                               ti.employee_id,
+    // Get all teacher schedules for current school year from class_schedules table
+    $schedules_query = "SELECT cs.*, 
+                               CONCAT(t.first_name, ' ', t.last_name) as teacher_name,
+                               u.username as teacher_username,
+                               t.employee_id,
                                s.subject_name,
+                               s.subject_code,
                                sec.section_name,
-                               gl.grade_name
-                        FROM teacher_schedules ts
-                        JOIN teacher_info ti ON ts.teacher_id = ti.user_id
-                        LEFT JOIN subjects s ON ts.subject_id = s.id
-                        LEFT JOIN sections sec ON ts.section_id = sec.id
+                               gl.grade_name,
+                               cs.activity_name
+                        FROM class_schedules cs
+                        LEFT JOIN teachers t ON cs.teacher_id = t.user_id
+                        LEFT JOIN users u ON t.user_id = u.id
+                        LEFT JOIN subjects s ON cs.subject_id = s.id
+                        LEFT JOIN sections sec ON cs.section_id = sec.id
                         LEFT JOIN grade_levels gl ON sec.grade_level_id = gl.id
-                        WHERE ts.school_year_id = ? AND ts.is_active = 1 AND ti.user_active = 1 AND ti.teacher_active = 1
-                        ORDER BY ti.last_name, ti.first_name, 
-                                 FIELD(ts.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'),
-                                 ts.start_time";
+                        WHERE cs.school_year_id = ? AND cs.is_active = 1 AND cs.teacher_id IS NOT NULL
+                        ORDER BY t.last_name, t.first_name, 
+                                 FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'),
+                                 cs.start_time";
     $schedules_stmt = $db->prepare($schedules_query);
     $schedules_stmt->execute([$current_year['id']]);
     $schedules = $schedules_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -221,12 +226,15 @@ try {
     // Handle AJAX requests for getting teacher schedules by teacher_id
     if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_teacher_schedule' && isset($_GET['teacher_id'])) {
         $teacher_id = $_GET['teacher_id'];
-        $teacher_schedules_query = "SELECT ts.*, s.subject_name 
-                                   FROM teacher_schedules ts
-                                   LEFT JOIN subjects s ON ts.subject_id = s.id
-                                   WHERE ts.teacher_id = ? AND ts.school_year_id = ? AND ts.is_active = 1
-                                   ORDER BY FIELD(ts.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'),
-                                           ts.start_time";
+        $teacher_schedules_query = "SELECT cs.*, s.subject_name, s.subject_code, cs.activity_name,
+                                           sec.section_name, gl.grade_name
+                                   FROM class_schedules cs
+                                   LEFT JOIN subjects s ON cs.subject_id = s.id
+                                   LEFT JOIN sections sec ON cs.section_id = sec.id
+                                   LEFT JOIN grade_levels gl ON sec.grade_level_id = gl.id
+                                   WHERE cs.teacher_id = ? AND cs.school_year_id = ? AND cs.is_active = 1
+                                   ORDER BY FIELD(cs.day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'),
+                                           cs.start_time";
         $teacher_schedules_stmt = $db->prepare($teacher_schedules_query);
         $teacher_schedules_stmt->execute([$teacher_id, $current_year['id']]);
         $teacher_schedules = $teacher_schedules_stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -239,7 +247,7 @@ try {
     // Handle AJAX requests for getting specific schedule data for editing
     if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_schedule_data' && isset($_GET['id'])) {
         $schedule_id = $_GET['id'];
-        $schedule_query = "SELECT * FROM teacher_schedules WHERE id = ? AND is_active = 1";
+        $schedule_query = "SELECT * FROM class_schedules WHERE id = ? AND is_active = 1";
         $schedule_stmt = $db->prepare($schedule_query);
         $schedule_stmt->execute([$schedule_id]);
         $schedule_data = $schedule_stmt->fetch(PDO::FETCH_ASSOC);

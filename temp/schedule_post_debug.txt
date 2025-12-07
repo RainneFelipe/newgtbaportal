@@ -1,0 +1,104 @@
+2025-12-07 10:29:35
+POST DATA:
+Array
+(
+    [action] => create_schedule
+    [section_id] => 9
+    [schedule_type] => subject
+    [subject_id] => 20
+    [teacher_id] => 
+    [activity_name] => 
+    [days_of_week] => Array
+        (
+            [0] => Tuesday
+        )
+
+    [start_time] => 07:00
+    [end_time] => 08:00
+    [room] => 303
+)
+
+
+PROCESSED VALUES:
+section_id: 9
+teacher_id: NULL
+subject_id: 20
+
+2025-12-07 10:32:35
+POST DATA:
+Array
+(
+    [action] => create_schedule
+    [section_id] => 9
+    [schedule_type] => subject
+    [subject_id] => 20
+    [teacher_id] => 13
+    [activity_name] => 
+    [days_of_week] => Array
+        (
+            [0] => Thursday
+        )
+
+    [start_time] => 13:30
+    [end_time] => 14:30
+    [room] => 405
+)
+
+
+PROCESSED VALUES:
+section_id: 9
+teacher_id: 13
+subject_id: 20
+
+2025-12-07 10:33:14
+POST DATA:
+Array
+(
+    [action] => create_schedule
+    [section_id] => 9
+    [schedule_type] => subject
+    [subject_id] => 20
+    [teacher_id] => 13
+    [activity_name] => 
+    [days_of_week] => Array
+        (
+            [0] => Monday
+        )
+
+    [start_time] => 07:00
+    [end_time] => 08:00
+    [room] => 101
+)
+
+
+PROCESSED VALUES:
+section_id: 9
+teacher_id: 13
+subject_id: 20
+
+2025-12-07 10:34:46
+POST DATA:
+Array
+(
+    [action] => create_schedule
+    [section_id] => 9
+    [schedule_type] => subject
+    [subject_id] => 16
+    [teacher_id] => 14
+    [activity_name] => 
+    [days_of_week] => Array
+        (
+            [0] => Friday
+        )
+
+    [start_time] => 07:00
+    [end_time] => 08:00
+    [room] => 101
+)
+
+
+PROCESSED VALUES:
+section_id: 9
+teacher_id: 14
+subject_id: 16
+

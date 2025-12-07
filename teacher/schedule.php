@@ -39,15 +39,16 @@ try {
     $current_year = $stmt->fetch(PDO::FETCH_ASSOC);
     
     // Get complete schedule for the teacher
-    $query = "SELECT ts.*, s.subject_name, s.subject_code, sec.section_name, 
-                     gl.grade_name, ts.activity_name
-              FROM teacher_schedules ts
-              LEFT JOIN subjects s ON ts.subject_id = s.id
-              LEFT JOIN sections sec ON ts.section_id = sec.id
+    $query = "SELECT cs.*, s.subject_name, s.subject_code, sec.section_name, 
+                     gl.grade_name, cs.activity_name, r.room_number
+              FROM class_schedules cs
+              LEFT JOIN subjects s ON cs.subject_id = s.id
+              LEFT JOIN sections sec ON cs.section_id = sec.id
               LEFT JOIN grade_levels gl ON sec.grade_level_id = gl.id
-              WHERE ts.teacher_id = :teacher_id AND ts.is_active = 1
+              LEFT JOIN rooms r ON cs.room_id = r.id
+              WHERE cs.teacher_id = :teacher_id AND cs.is_active = 1
               ORDER BY 
-                CASE ts.day_of_week 
+                CASE cs.day_of_week 
                     WHEN 'Monday' THEN 1
                     WHEN 'Tuesday' THEN 2
                     WHEN 'Wednesday' THEN 3
@@ -55,7 +56,7 @@ try {
                     WHEN 'Friday' THEN 5
                     WHEN 'Saturday' THEN 6
                 END,
-                ts.start_time";
+                cs.start_time";
     
     $stmt = $db->prepare($query);
     $stmt->bindParam(':teacher_id', $_SESSION['user_id']);
@@ -180,8 +181,8 @@ ob_start();
                     <strong><?php echo $next_class['activity_name'] ? htmlspecialchars($next_class['activity_name']) : htmlspecialchars($next_class['subject_name']); ?></strong>
                     with <?php echo htmlspecialchars($next_class['grade_name'] . ' - ' . $next_class['section_name']); ?>
                     at <?php echo date('g:i A', strtotime($next_class['start_time'])); ?>
-                    <?php if ($next_class['room']): ?>
-                        in Room <?php echo htmlspecialchars($next_class['room']); ?>
+                    <?php if ($next_class['room_number']): ?>
+                        in Room <?php echo htmlspecialchars($next_class['room_number']); ?>
                     <?php endif; ?>
                 </p>
             </div>
@@ -210,8 +211,8 @@ ob_start();
                         <?php echo $class['activity_name'] ? htmlspecialchars($class['activity_name']) : htmlspecialchars($class['subject_name']); ?>
                     </h4>
                     <p class="class-section"><?php echo htmlspecialchars($class['grade_name'] . ' - ' . $class['section_name']); ?></p>
-                    <?php if ($class['room']): ?>
-                        <p class="class-room">Room: <?php echo htmlspecialchars($class['room']); ?></p>
+                    <?php if ($class['room_number']): ?>
+                        <p class="class-room">Room: <?php echo htmlspecialchars($class['room_number']); ?></p>
                     <?php endif; ?>
                 </div>
                 
@@ -269,8 +270,8 @@ ob_start();
                                             <?php echo $class['activity_name'] ? htmlspecialchars($class['activity_name']) : htmlspecialchars($class['subject_name']); ?>
                                         </h5>
                                         <p class="item-section"><?php echo htmlspecialchars($class['grade_name'] . ' - ' . $class['section_name']); ?></p>
-                                        <?php if ($class['room']): ?>
-                                            <p class="item-room">Room: <?php echo htmlspecialchars($class['room']); ?></p>
+                                        <?php if ($class['room_number']): ?>
+                                            <p class="item-room">Room: <?php echo htmlspecialchars($class['room_number']); ?></p>
                                         <?php endif; ?>
                                     </div>
                                     

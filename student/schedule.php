@@ -33,7 +33,8 @@ try {
                          WHEN cs.teacher_id IS NOT NULL THEN CONCAT(t.first_name, ' ', t.last_name)
                          ELSE NULL
                      END as teacher_name,
-                     sec.section_name, gl.grade_name
+                     sec.section_name, gl.grade_name,
+                     cs.room as room_number
               FROM students st
               LEFT JOIN sections sec ON st.current_section_id = sec.id
               LEFT JOIN grade_levels gl ON st.current_grade_level_id = gl.id
@@ -371,6 +372,11 @@ ob_start();
                                 <div class="class-title">
                                     <?php echo htmlspecialchars($class['activity_display'] ?? 'Unknown'); ?>
                                 </div>
+                                <?php if (!empty($class['room_number'])): ?>
+                                    <div class="class-room">
+                                        Room <?php echo htmlspecialchars($class['room_number']); ?>
+                                    </div>
+                                <?php endif; ?>
                                 
                                 
                             </div>
