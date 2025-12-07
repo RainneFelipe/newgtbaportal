@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Dec 07, 2025 at 04:20 AM
+-- Generation Time: Dec 07, 2025 at 05:40 AM
 -- Server version: 8.0.30
 -- PHP Version: 8.1.10
 
@@ -1407,7 +1407,7 @@ INSERT INTO `students` (`id`, `user_id`, `student_id`, `lrn`, `student_type`, `e
 (468, 528, '2025118', '202500000118', 'New', 'Pending Payment', NULL, NULL, NULL, NULL, NULL, NULL, 'Feliciana', 'Bautista', 'Salazar', NULL, 'Female', '2010-08-14', 'Muntinlupa City', 'Catholic', '369 Carnation Avenue, Muntinlupa City', '369 Carnation Avenue, Muntinlupa City', 463, 535, 655, 'Gabriel Bautista', '09312345678', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
 (469, 529, '2025119', '202500000119', 'New', 'Pending Payment', NULL, NULL, NULL, NULL, NULL, NULL, 'Hermenegildo', 'Navarro', 'Cordero', NULL, 'Male', '2010-12-18', 'Marikina City', 'Catholic', '741 Peony Road, Marikina City', '741 Peony Road, Marikina City', 464, 536, 656, 'Rafael Navarro', '09323456789', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
 (470, 530, '2025120', '202500000120', 'New', 'Pending Payment', NULL, NULL, NULL, NULL, NULL, NULL, 'Esperanza', 'Valdez', 'Gutierrez', NULL, 'Female', '2010-06-22', 'Pasay City', 'Catholic', '852 Cosmos Lane, Pasay City', '852 Cosmos Lane, Pasay City', 465, 537, 657, 'Samuel Valdez', '09334567890', 'Father', 12, 17, 2, NULL, NULL, NULL, 1, 1, '2025-07-30 10:50:35', '2025-11-24 07:33:42'),
-(472, 542, '123123', NULL, 'New', 'Enrolled', NULL, NULL, NULL, NULL, NULL, NULL, 'Alix', 'Felipe', NULL, NULL, 'Male', '2025-11-13', 'NCR', 'Catholic', 'street', 'street', 663, 664, NULL, '123', '123', '123', 4, NULL, 2, NULL, NULL, NULL, 1, 3, '2025-11-23 09:31:28', '2025-12-07 03:59:05');
+(472, 542, '2025121', NULL, 'New', 'Enrolled', NULL, NULL, NULL, NULL, NULL, NULL, 'Alix', 'Felipe', NULL, NULL, 'Male', '2025-11-13', 'NCR', 'Catholic', 'street', 'street', 663, 664, NULL, '123', '123', '123', 4, NULL, 2, NULL, NULL, NULL, 1, 3, '2025-11-23 09:31:28', '2025-12-07 04:44:29');
 
 -- --------------------------------------------------------
 
@@ -3143,7 +3143,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id`, `username`, `email`, `profile_picture`, `password`, `role_id`, `is_active`, `archived_at`, `privacy_policy_accepted`, `privacy_policy_accepted_at`, `privacy_policy_ip_address`, `email_verified_at`, `remember_token`, `created_at`, `updated_at`) VALUES
 (1, 'admin', 'admin@gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-19 07:49:43', '2025-07-19 07:49:43'),
 (2, 'finance', 'finance@gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 3, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-19 07:49:43', '2025-07-19 07:49:43'),
-(3, 'registrar', 'registrar@gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 4, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-19 07:49:43', '2025-07-19 07:49:43'),
+(3, 'registrar', 'registrar@gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 4, 1, NULL, 1, '2025-12-07 04:38:49', '127.0.0.1', NULL, NULL, '2025-07-19 07:49:43', '2025-12-07 04:38:49'),
 (4, 'principal', 'principal@gtba.edu.ph', 'uploads/profiles/profile_4_1753876058.png', '$2y$10$QlKucTMa9Z2toEb7T6oHTeM2CrVUOy4xK6mdJmANZvGRkVIx.v0tO', 2, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-19 07:49:43', '2025-07-30 11:47:38'),
 (5, 'student', 'student@gtba.edu.ph', NULL, '$2y$10$1h4T2556r/2pf9J3X2CozeSAUAeaXYLE5yZKcKUPO0u74Cykxr8Hi', 6, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-19 11:21:02', '2025-07-19 11:21:52'),
 (6, 'teacher', 'teacher@gtba.edu.ph', NULL, '$2y$10$I18cCqCUc9o7hwSwhBEyqOk5lhqR1anTCl89tdP4trekNUu3Cc/I.', 5, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-19 11:24:50', '2025-07-19 11:24:50'),
@@ -3271,7 +3271,7 @@ INSERT INTO `users` (`id`, `username`, `email`, `profile_picture`, `password`, `
 (537, '2025118', '2025118@student.gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 6, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-30 10:50:35', '2025-07-30 10:50:35'),
 (538, '2025119', '2025119@student.gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 6, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-30 10:50:35', '2025-07-30 10:50:35'),
 (539, '2025120', '2025120@student.gtba.edu.ph', NULL, '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 6, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-07-30 10:50:35', '2025-07-30 10:50:35'),
-(542, '123123', '123123@student.gtba.edu.ph', NULL, '$2y$10$1tEZ0IIpOqcAJcGfuSotK.N0W6aQxs0OGyGEoruxJElHivXq1tLTW', 6, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-11-23 09:31:28', '2025-11-23 09:31:28'),
+(542, '2025121', '123123@student.gtba.edu.ph', NULL, '$2y$10$1tEZ0IIpOqcAJcGfuSotK.N0W6aQxs0OGyGEoruxJElHivXq1tLTW', 6, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-11-23 09:31:28', '2025-12-07 04:44:29'),
 (543, 'test', 'test@gmail.com', NULL, '$2y$10$mXzykCsrs6UberHfC6wfNOxCr4yBBtuFsJyreISo/Mt07bpM5w/3S', 5, 1, NULL, 0, NULL, NULL, NULL, NULL, '2025-12-05 13:55:18', '2025-12-05 13:59:09');
 
 -- --------------------------------------------------------

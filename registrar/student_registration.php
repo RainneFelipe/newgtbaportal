@@ -171,6 +171,14 @@ foreach ($school_years as $year) {
     }
 }
 
+// Generate next student ID based on current year and count
+$current_year = date('Y');
+$student_count_stmt = $conn->prepare("SELECT COUNT(*) as count FROM students WHERE student_id LIKE ?");
+$student_count_stmt->execute([$current_year . '%']);
+$count_result = $student_count_stmt->fetch(PDO::FETCH_ASSOC);
+$next_number = str_pad($count_result['count'] + 1, 3, '0', STR_PAD_LEFT);
+$next_student_id = $current_year . $next_number;
+
 include '../includes/header.php';
 ?>
 
@@ -200,8 +208,8 @@ include '../includes/header.php';
                     <div class="form-grid">
                         <div class="form-group">
                             <label for="student_id" class="required">Student ID</label>
-                            <input type="text" id="student_id" name="student_id" required maxlength="20">
-                            <small>Unique school-generated ID</small>
+                            <input type="text" id="student_id" name="student_id" value="<?php echo htmlspecialchars($next_student_id); ?>" readonly required maxlength="20" style="background-color: #f0f0f0; cursor: not-allowed;">
+                            <small>Auto-generated ID (Format: YEAR + Number)</small>
                         </div>
                         
                         <div class="form-group">
@@ -563,13 +571,13 @@ function copyAddress() {
     }
 }
 
-// Auto-generate email if Student ID changes
-document.getElementById('student_id').addEventListener('input', function() {
-    const studentId = this.value.toLowerCase();
+// Auto-generate email based on Student ID (which is now readonly)
+window.addEventListener('DOMContentLoaded', function() {
+    const studentId = document.getElementById('student_id').value.toLowerCase();
     const emailField = document.getElementById('student_email');
     
-    if (emailField.value === '' || emailField.value.endsWith('@student.gtba.edu.ph')) {
-        emailField.value = studentId ? studentId + '@student.gtba.edu.ph' : '';
+    if (emailField.value === '') {
+        emailField.value = studentId + '@student.gtba.edu.ph';
     }
 });
 </script>
