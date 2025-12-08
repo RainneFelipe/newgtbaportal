@@ -314,7 +314,7 @@ ob_start();
                                 </div>
                             </td>
                             <td><?php echo htmlspecialchars($student['username']); ?></td>
-                            <td><?php echo htmlspecialchars($student['email']); ?></td>
+                            <td><?php echo htmlspecialchars($student['email'] ?? ''); ?></td>
                             <td>
                                 <?php if ($student['current_grade']): ?>
                                     <span class="grade-badge"><?php echo htmlspecialchars($student['current_grade']); ?></span>

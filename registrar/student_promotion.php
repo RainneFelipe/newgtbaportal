@@ -474,7 +474,7 @@ include '../includes/header.php';
                                                         </span>
                                                         <span class="meta-item">
                                                             <i class="fas fa-barcode"></i>
-                                                            <?php echo htmlspecialchars($student['lrn']); ?>
+                                                            <?php echo htmlspecialchars($student['lrn'] ?? ''); ?>
                                                         </span>
                                                     </div>
                                                 </div>

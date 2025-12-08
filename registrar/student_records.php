@@ -312,7 +312,7 @@ include '../includes/header.php';
                                     </div>
                                     <div class="id-item">
                                         <small>LRN:</small>
-                                        <strong><?php echo htmlspecialchars($student['lrn']); ?></strong>
+                                        <strong><?php echo htmlspecialchars($student['lrn'] ?? ''); ?></strong>
                                     </div>
                                 </td>
                                 <td class="academic-info">

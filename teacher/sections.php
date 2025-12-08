@@ -230,7 +230,7 @@ ob_start();
                                         <br><small><?php echo htmlspecialchars($student['middle_name']); ?></small>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo htmlspecialchars($student['lrn']); ?></td>
+                                <td><?php echo htmlspecialchars($student['lrn'] ?? ''); ?></td>
                                 <td>
                                     <span class="student-type-badge <?php echo strtolower($student['student_type']); ?>">
                                         <?php echo htmlspecialchars($student['student_type']); ?>

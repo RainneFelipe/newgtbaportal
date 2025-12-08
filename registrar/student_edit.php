@@ -280,7 +280,7 @@ include '../includes/header.php';
                     </div>
                     <div class="form-group">
                         <label for="email" class="required">Email</label>
-                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($student['email']); ?>" required>
+                        <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($student['email'] ?? ''); ?>" required>
                     </div>
                 </div>
             </div>
@@ -295,7 +295,7 @@ include '../includes/header.php';
                     </div>
                     <div class="form-group">
                         <label for="lrn" class="required">LRN</label>
-                        <input type="text" id="lrn" name="lrn" value="<?php echo htmlspecialchars($student['lrn']); ?>" required maxlength="12">
+                        <input type="text" id="lrn" name="lrn" value="<?php echo htmlspecialchars($student['lrn'] ?? ''); ?>" required maxlength="12">
                     </div>
                     <div class="form-group">
                         <label for="student_type" class="required">Student Type</label>
@@ -331,11 +331,11 @@ include '../includes/header.php';
                     </div>
                     <div class="form-group">
                         <label for="middle_name">Middle Name</label>
-                        <input type="text" id="middle_name" name="middle_name" value="<?php echo htmlspecialchars($student['middle_name']); ?>">
+                        <input type="text" id="middle_name" name="middle_name" value="<?php echo htmlspecialchars($student['middle_name'] ?? ''); ?>">
                     </div>
                     <div class="form-group">
                         <label for="suffix">Suffix</label>
-                        <input type="text" id="suffix" name="suffix" value="<?php echo htmlspecialchars($student['suffix']); ?>" placeholder="Jr., Sr., III, etc.">
+                        <input type="text" id="suffix" name="suffix" value="<?php echo htmlspecialchars($student['suffix'] ?? ''); ?>" placeholder="Jr., Sr., III, etc.">
                     </div>
                     <div class="form-group">
                         <label for="gender" class="required">Gender</label>
@@ -350,11 +350,11 @@ include '../includes/header.php';
                     </div>
                     <div class="form-group">
                         <label for="place_of_birth" class="required">Place of Birth</label>
-                        <input type="text" id="place_of_birth" name="place_of_birth" value="<?php echo htmlspecialchars($student['place_of_birth']); ?>" required>
+                        <input type="text" id="place_of_birth" name="place_of_birth" value="<?php echo htmlspecialchars($student['place_of_birth'] ?? ''); ?>" required>
                     </div>
                     <div class="form-group">
                         <label for="religion">Religion</label>
-                        <input type="text" id="religion" name="religion" value="<?php echo htmlspecialchars($student['religion']); ?>">
+                        <input type="text" id="religion" name="religion" value="<?php echo htmlspecialchars($student['religion'] ?? ''); ?>">
                     </div>
                 </div>
             </div>
@@ -482,11 +482,11 @@ include '../includes/header.php';
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label for="present_address" class="required">Present Address</label>
-                        <textarea id="present_address" name="present_address" rows="3" required><?php echo htmlspecialchars($student['present_address']); ?></textarea>
+                        <textarea id="present_address" name="present_address" rows="3" required><?php echo htmlspecialchars($student['present_address'] ?? ''); ?></textarea>
                     </div>
                     <div class="form-group full-width">
                         <label for="permanent_address" class="required">Permanent Address</label>
-                        <textarea id="permanent_address" name="permanent_address" rows="3" required><?php echo htmlspecialchars($student['permanent_address']); ?></textarea>
+                        <textarea id="permanent_address" name="permanent_address" rows="3" required><?php echo htmlspecialchars($student['permanent_address'] ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
@@ -497,15 +497,15 @@ include '../includes/header.php';
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="emergency_contact_name">Emergency Contact Name</label>
-                        <input type="text" id="emergency_contact_name" name="emergency_contact_name" value="<?php echo htmlspecialchars($student['emergency_contact_name']); ?>">
+                        <input type="text" id="emergency_contact_name" name="emergency_contact_name" value="<?php echo htmlspecialchars($student['emergency_contact_name'] ?? ''); ?>">
                     </div>
                     <div class="form-group">
                         <label for="emergency_contact_number">Emergency Contact Number</label>
-                        <input type="text" id="emergency_contact_number" name="emergency_contact_number" value="<?php echo htmlspecialchars($student['emergency_contact_number']); ?>">
+                        <input type="text" id="emergency_contact_number" name="emergency_contact_number" value="<?php echo htmlspecialchars($student['emergency_contact_number'] ?? ''); ?>">
                     </div>
                     <div class="form-group">
                         <label for="emergency_contact_relationship">Relationship</label>
-                        <input type="text" id="emergency_contact_relationship" name="emergency_contact_relationship" value="<?php echo htmlspecialchars($student['emergency_contact_relationship']); ?>">
+                        <input type="text" id="emergency_contact_relationship" name="emergency_contact_relationship" value="<?php echo htmlspecialchars($student['emergency_contact_relationship'] ?? ''); ?>">
                     </div>
                 </div>
             </div>
@@ -557,15 +557,15 @@ include '../includes/header.php';
                 <div class="form-grid">
                     <div class="form-group full-width">
                         <label for="medical_conditions">Medical Conditions</label>
-                        <textarea id="medical_conditions" name="medical_conditions" rows="3" placeholder="List any medical conditions..."><?php echo htmlspecialchars($student['medical_conditions']); ?></textarea>
+                        <textarea id="medical_conditions" name="medical_conditions" rows="3" placeholder="List any medical conditions..."><?php echo htmlspecialchars($student['medical_conditions'] ?? ''); ?></textarea>
                     </div>
                     <div class="form-group full-width">
                         <label for="allergies">Allergies</label>
-                        <textarea id="allergies" name="allergies" rows="3" placeholder="List any allergies..."><?php echo htmlspecialchars($student['allergies']); ?></textarea>
+                        <textarea id="allergies" name="allergies" rows="3" placeholder="List any allergies..."><?php echo htmlspecialchars($student['allergies'] ?? ''); ?></textarea>
                     </div>
                     <div class="form-group full-width">
                         <label for="special_needs">Special Needs</label>
-                        <textarea id="special_needs" name="special_needs" rows="3" placeholder="List any special needs or accommodations..."><?php echo htmlspecialchars($student['special_needs']); ?></textarea>
+                        <textarea id="special_needs" name="special_needs" rows="3" placeholder="List any special needs or accommodations..."><?php echo htmlspecialchars($student['special_needs'] ?? ''); ?></textarea>
                     </div>
                 </div>
             </div>
