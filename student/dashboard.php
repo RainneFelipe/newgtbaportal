@@ -168,7 +168,7 @@ ob_start();
         <div class="card-icon">📢</div>
         <h3 class="card-title">Announcements</h3>
         <p class="card-description">Stay updated with the latest school announcements and news.</p>
-        <a href="announcements.php" class="card-link">View Announcements</a>
+        <a href="../shared/announcements.php" class="card-link">View Announcements</a>
     </div>
     
     <div class="dashboard-card">
